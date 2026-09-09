@@ -7,10 +7,12 @@ import {
   X, 
   CheckCircle2, 
   AlertTriangle, 
-  Image as ImageIcon
+  Image as ImageIcon,
+  RotateCw,
+  Loader2
 } from 'lucide-react';
 import { DamagePhoto } from '../types';
-import { compressImage } from '../utils/imageCompressor';
+import { compressImage, rotateImageDataUrl } from '../utils/imageCompressor';
 
 interface DamageInspectionPhotosProps {
   photos: DamagePhoto[];
@@ -25,6 +27,28 @@ export const DamageInspectionPhotos: React.FC<DamageInspectionPhotosProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [previewPhoto, setPreviewPhoto] = useState<DamagePhoto | null>(null);
+  const [rotatingId, setRotatingId] = useState<string | null>(null);
+
+  // Girar foto em 90 graus no sentido horário
+  const handleRotatePhoto = async (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const photo = photos.find((p) => p.id === id);
+    if (!photo || rotatingId) return;
+
+    setRotatingId(id);
+    try {
+      const rotatedUrl = await rotateImageDataUrl(photo.url, 90);
+      const updated = photos.map((p) => (p.id === id ? { ...p, url: rotatedUrl } : p));
+      onChangePhotos(updated);
+      if (previewPhoto?.id === id) {
+        setPreviewPhoto({ ...previewPhoto, url: rotatedUrl });
+      }
+    } catch (err) {
+      console.error('Erro ao girar imagem:', err);
+    } finally {
+      setRotatingId(null);
+    }
+  };
 
   // Processar arquivos de imagens selecionados
   const handleFiles = async (fileList: FileList | null) => {
@@ -158,17 +182,30 @@ export const DamageInspectionPhotos: React.FC<DamageInspectionPhotosProps> = ({
                 className="bg-[#0A0A0C] border border-[#1E3349] rounded-xl overflow-hidden flex flex-col group hover:border-blue-500/50 transition-all shadow-md"
               >
                 {/* Imagem com botões flutuantes */}
-                <div className="relative aspect-video bg-black flex items-center justify-center overflow-hidden">
+                <div className="relative aspect-video bg-[#050508] flex items-center justify-center overflow-hidden border-b border-[#1E3349]">
                   <img
                     src={photo.url}
                     alt={photo.descricao}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-contain select-none"
                   />
                   <span className="absolute top-2 left-2 bg-black/80 backdrop-blur-sm text-white text-[11px] font-mono font-bold px-2 py-0.5 rounded border border-white/10">
                     #{index + 1}
                   </span>
 
                   <div className="absolute top-2 right-2 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
+                    <button
+                      type="button"
+                      onClick={(e) => handleRotatePhoto(photo.id, e)}
+                      disabled={rotatingId === photo.id}
+                      title="Girar foto 90°"
+                      className="p-1.5 rounded-lg bg-black/70 hover:bg-blue-600 text-white transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      {rotatingId === photo.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
+                      ) : (
+                        <RotateCw className="w-3.5 h-3.5" />
+                      )}
+                    </button>
                     <button
                       type="button"
                       onClick={() => setPreviewPhoto(photo)}
@@ -221,14 +258,29 @@ export const DamageInspectionPhotos: React.FC<DamageInspectionPhotosProps> = ({
         <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md p-4 flex flex-col items-center justify-center">
           <div className="relative max-w-4xl w-full bg-[#121E2B] rounded-2xl overflow-hidden border border-[#223952]">
             <div className="p-3 bg-[#0A0A0C] border-b border-[#1E3349] flex items-center justify-between text-white">
-              <span className="font-bold text-xs truncate">{previewPhoto.descricao}</span>
-              <button
-                type="button"
-                onClick={() => setPreviewPhoto(null)}
-                className="p-1 rounded-lg bg-[#121E2B] text-slate-400 hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <span className="font-bold text-xs truncate max-w-[60%]">{previewPhoto.descricao}</span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleRotatePhoto(previewPhoto.id)}
+                  disabled={rotatingId === previewPhoto.id}
+                  className="px-2.5 py-1 rounded-lg bg-[#1A2D40] hover:bg-blue-600 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  {rotatingId === previewPhoto.id ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <RotateCw className="w-3.5 h-3.5" />
+                  )}
+                  <span>Girar 90°</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewPhoto(null)}
+                  className="p-1 rounded-lg bg-[#121E2B] text-slate-400 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
             <div className="p-2 max-h-[75vh] flex items-center justify-center bg-black">
               <img

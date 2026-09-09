@@ -218,6 +218,10 @@ export default function App() {
               quote={printingQuote}
               workshop={workshop}
               onClose={() => setPrintingQuote(null)}
+              onUpdateQuote={(updatedQuote) => {
+                handleSaveQuote(updatedQuote);
+                setPrintingQuote(updatedQuote);
+              }}
             />
           )}
         </>

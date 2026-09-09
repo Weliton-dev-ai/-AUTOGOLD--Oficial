@@ -10,28 +10,89 @@ import {
   Download,
   Loader2,
   FileText,
-  Share2
+  Share2,
+  RotateCw,
+  Maximize2,
+  Sliders,
+  ZoomIn
 } from 'lucide-react';
-import { Quote, WorkshopProfile } from '../types';
+import { Quote, WorkshopProfile, DamagePhoto } from '../types';
 import { formatCurrencyBRL } from '../utils/calculator';
 import { generateWhatsAppMessage, openWhatsAppDirect } from '../utils/whatsapp';
 import { downloadQuotePdf, sharePdfOrWhatsApp } from '../utils/pdfGenerator';
+import { rotateImageDataUrl } from '../utils/imageCompressor';
 
 interface QuotePrintModalProps {
   quote: Quote;
   workshop: WorkshopProfile;
   onClose: () => void;
+  onUpdateQuote?: (quote: Quote) => void;
 }
 
 export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
   quote,
   workshop,
   onClose,
+  onUpdateQuote,
 }) => {
   const [copiedKey, setCopiedKey] = useState(false);
   const [copiedText, setCopiedText] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: 'success' | 'info' | 'error'; text: string } | null>(null);
+
+  // Estados de layout, ajuste e rotação das fotos
+  const [photosList, setPhotosList] = useState<DamagePhoto[]>(quote.fotosAvarias || []);
+  const [rotatingPhotoId, setRotatingPhotoId] = useState<string | null>(null);
+  const [photoLayout, setPhotoLayout] = useState<'4_per_page' | '2_per_page' | '6_per_page'>('4_per_page');
+  const [photoFit, setPhotoFit] = useState<'contain' | 'cover'>('contain');
+  const [fitScreen, setFitScreen] = useState(true);
+  const [screenWidth, setScreenWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+
+  // Sincronizar fotos caso a prop mude
+  useEffect(() => {
+    setPhotosList(quote.fotosAvarias || []);
+  }, [quote.fotosAvarias]);
+
+  // Listener para responsividade da visualização do papel A4
+  useEffect(() => {
+    const handleResize = () => setScreenWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Calcular escala para enquadramento perfeito na tela do celular/computador
+  const previewScale = React.useMemo(() => {
+    if (!fitScreen || screenWidth >= 850) return 1;
+    const availableWidth = screenWidth - 24;
+    return Math.min(1, Math.max(0.38, availableWidth / 794));
+  }, [fitScreen, screenWidth]);
+
+  // Girar foto em 90 graus no laudo e persistir
+  const handleRotatePhoto = async (photoId: string) => {
+    const target = photosList.find((p) => p.id === photoId);
+    if (!target || rotatingPhotoId) return;
+
+    setRotatingPhotoId(photoId);
+    try {
+      const rotatedUrl = await rotateImageDataUrl(target.url, 90);
+      const updated = photosList.map((p) => (p.id === photoId ? { ...p, url: rotatedUrl } : p));
+      setPhotosList(updated);
+      if (onUpdateQuote) {
+        onUpdateQuote({
+          ...quote,
+          fotosAvarias: updated,
+        });
+      }
+      setFeedbackMsg({ type: 'success', text: 'Foto girada 90° com sucesso!' });
+      setTimeout(() => setFeedbackMsg(null), 3000);
+    } catch (err) {
+      console.error('Erro ao girar foto:', err);
+      setFeedbackMsg({ type: 'error', text: 'Não foi possível girar a foto.' });
+      setTimeout(() => setFeedbackMsg(null), 3000);
+    } finally {
+      setRotatingPhotoId(null);
+    }
+  };
 
   // Garante que o preço de cada peça na lista some exatamente o total de serviços,
   // com a margem de lucro da oficina já embutida de forma imperceptível para o cliente
@@ -141,19 +202,19 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
     openWhatsAppDirect(quote.cliente.telefone, text);
   };
 
-  const hasPhotos = quote.fotosAvarias && quote.fotosAvarias.length > 0;
+  const hasPhotos = photosList && photosList.length > 0;
 
-  // Agrupar fotos em páginas de até 4 fotos por página (2 colunas x 2 linhas)
-  // para garantir enquadramento perfeito, sem cortar fotos ao meio nem gerar faixas no PDF
+  // Agrupar fotos em páginas de acordo com a opção selecionada:
+  // 4 fotos (2x2 padrão A4), 2 fotos (grandes para laudo detalhado), 6 fotos (compacto)
+  const chunkSize = photoLayout === '2_per_page' ? 2 : photoLayout === '6_per_page' ? 6 : 4;
   const photoPages = React.useMemo(() => {
-    if (!quote.fotosAvarias || quote.fotosAvarias.length === 0) return [];
-    const pages: (typeof quote.fotosAvarias)[] = [];
-    const chunkSize = 4;
-    for (let i = 0; i < quote.fotosAvarias.length; i += chunkSize) {
-      pages.push(quote.fotosAvarias.slice(i, i + chunkSize));
+    if (!photosList || photosList.length === 0) return [];
+    const pages: DamagePhoto[][] = [];
+    for (let i = 0; i < photosList.length; i += chunkSize) {
+      pages.push(photosList.slice(i, i + chunkSize));
     }
     return pages;
-  }, [quote.fotosAvarias]);
+  }, [photosList, chunkSize]);
 
   return (
     <div id="modal-impressao-orcamento" className="fixed inset-0 z-50 overflow-y-auto bg-[#0A0A0C]/90 backdrop-blur-md p-1.5 sm:p-6 flex justify-center items-start print:p-0 print:bg-white print:static print:inset-auto">
@@ -168,7 +229,7 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
             </div>
             {hasPhotos && (
               <span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
-                {quote.fotosAvarias?.length} fotos
+                {photosList.length} fotos
               </span>
             )}
             {/* Fechar botão no mobile no canto direito */}
@@ -244,6 +305,107 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
           </div>
         </div>
 
+        {/* Barra de Ajuste de Visualização, Layout e Orientação de Fotos (Oculta na Impressão) */}
+        <div className="bg-[#0f172a] border-b border-[#1E3349] px-3 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-2.5 text-xs text-slate-300 print:hidden">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            {/* Ajuste de Enquadramento na Tela (Mobile / Tablet / PC) */}
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setFitScreen(!fitScreen)}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer border ${
+                  fitScreen 
+                    ? 'bg-blue-600 text-white border-blue-500 shadow-sm' 
+                    : 'bg-[#1e293b] text-slate-300 border-[#334155] hover:bg-[#334155]'
+                }`}
+                title="Ajusta o documento A4 à tela do celular ou exibe em 100% real"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+                <span>{fitScreen && previewScale < 1 ? 'Ajustado à Tela' : 'Tamanho 100%'}</span>
+              </button>
+            </div>
+
+            {hasPhotos && (
+              <>
+                <div className="h-4 w-[1px] bg-slate-700 hidden sm:block" />
+
+                {/* Fotos por Folha */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-slate-400 text-[11px] font-medium hidden sm:inline">Fotos por folha:</span>
+                  <div className="flex rounded-lg bg-[#1e293b] p-0.5 border border-[#334155]">
+                    <button
+                      type="button"
+                      onClick={() => setPhotoLayout('4_per_page')}
+                      className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors cursor-pointer ${
+                        photoLayout === '4_per_page' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                      }`}
+                      title="4 fotos por folha (2 colunas x 2 linhas) - Enquadramento perfeito A4"
+                    >
+                      4 fotos (Padrão)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPhotoLayout('2_per_page')}
+                      className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors cursor-pointer ${
+                        photoLayout === '2_per_page' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                      }`}
+                      title="2 fotos por folha - Fotos grandes com alto nível de detalhe"
+                    >
+                      2 fotos (Grandes)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPhotoLayout('6_per_page')}
+                      className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors cursor-pointer ${
+                        photoLayout === '6_per_page' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                      }`}
+                      title="6 fotos por folha - Economiza folhas para muitas fotos"
+                    >
+                      6 fotos (Compacto)
+                    </button>
+                  </div>
+                </div>
+
+                {/* Enquadramento das fotos (Conter sem cortes vs Preencher) */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-slate-400 text-[11px] font-medium hidden md:inline">Enquadramento:</span>
+                  <div className="flex rounded-lg bg-[#1e293b] p-0.5 border border-[#334155]">
+                    <button
+                      type="button"
+                      onClick={() => setPhotoFit('contain')}
+                      className={`px-2 py-1 rounded text-[11px] font-bold transition-colors cursor-pointer ${
+                        photoFit === 'contain' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                      }`}
+                      title="Foto inteira sem cortar partes do veículo (ideal para vistoria)"
+                    >
+                      Conter (Foto Inteira)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPhotoFit('cover')}
+                      className={`px-2 py-1 rounded text-[11px] font-bold transition-colors cursor-pointer ${
+                        photoFit === 'cover' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                      }`}
+                      title="Preenche todo o retângulo"
+                    >
+                      Preencher
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {hasPhotos && (
+            <div className="text-[11px] text-slate-400 flex items-center gap-1.5">
+              <span>Girar foto no laudo: clique em</span>
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/60 text-white border border-white/20 font-semibold text-[10px]">
+                <RotateCw className="w-3 h-3 text-blue-400" /> 90°
+              </span>
+            </div>
+          )}
+        </div>
+
         {/* Feedback visual flutuante */}
         {feedbackMsg && (
           <div className={`p-3 text-xs font-bold text-center border-b flex items-center justify-center gap-2 print:hidden ${
@@ -259,15 +421,29 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
           </div>
         )}
 
-        {/* Canvas de Documento Timbrado Imprimível (A4) com ID para html2canvas & jsPDF */}
-        <div
-          id="printable-quote-content"
-          className="text-slate-900 font-sans bg-slate-900/40 p-2 sm:p-6 overflow-x-auto flex flex-col items-center gap-6"
-          style={{
-            color: '#0f172a',
-            fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-          }}
-        >
+        {/* Container responsivo com rolagem suave ou auto-ajuste de escala no celular */}
+        <div className="bg-slate-900/40 p-2 sm:p-6 overflow-x-auto flex justify-center print:bg-white print:p-0">
+          <div
+            style={{
+              width: previewScale < 1 ? `${Math.round(794 * previewScale)}px` : '794px',
+              transition: 'width 0.2s ease',
+            }}
+            className="flex flex-col items-center"
+          >
+            {/* Canvas de Documento Timbrado Imprimível (A4) com ID para html2canvas & jsPDF */}
+            <div
+              id="printable-quote-content"
+              className="text-slate-900 font-sans flex flex-col items-center gap-6 print:gap-0"
+              style={{
+                width: '794px',
+                minWidth: '794px',
+                maxWidth: '794px',
+                transform: (!isGeneratingPdf && previewScale < 1) ? `scale(${previewScale})` : 'none',
+                transformOrigin: 'top center',
+                color: '#0f172a',
+                fontFamily: 'Arial, Helvetica, sans-serif',
+              }}
+            >
           {/* PÁGINA 1: ORÇAMENTO TIMBRADO OFICIAL A4 */}
           <div
             className="pdf-page bg-white shadow-2xl rounded-xl space-y-4 print:shadow-none print:m-0 print:rounded-none"
@@ -299,25 +475,25 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                     className="w-16 h-16 rounded-xl flex flex-col items-center justify-center font-black shadow-sm shrink-0"
                     style={{ backgroundColor: '#0f172a', color: '#ffffff' }}
                   >
-                    <span className="text-[11px] uppercase tracking-wider" style={{ color: '#60a5fa' }}>AUTO</span>
-                    <span className="text-sm" style={{ color: '#facc15' }}>GOLD</span>
+                    <span className="text-[11px] uppercase font-bold" style={{ color: '#60a5fa' }}>AUTO</span>
+                    <span className="text-sm font-bold" style={{ color: '#facc15' }}>GOLD</span>
                   </div>
                 )}
 
                 <div className="min-w-0 flex-1">
-                  <h1 className="text-xl font-black tracking-tight leading-tight" style={{ color: '#0f172a' }}>
+                  <h1 className="text-xl font-bold" style={{ color: '#0f172a', lineHeight: '1.25' }}>
                     {workshop.nomeOficina}
                   </h1>
                   {workshop.razaoSocial && (
-                    <p className="text-xs font-medium truncate" style={{ color: '#475569' }}>{workshop.razaoSocial}</p>
+                    <p className="text-xs font-medium truncate" style={{ color: '#475569', lineHeight: '1.4' }}>{workshop.razaoSocial}</p>
                   )}
                   {workshop.cnpj && (
-                    <p className="text-xs" style={{ color: '#475569' }}>CNPJ: {workshop.cnpj}</p>
+                    <p className="text-xs" style={{ color: '#475569', lineHeight: '1.4' }}>CNPJ: {workshop.cnpj}</p>
                   )}
-                  <p className="text-xs" style={{ color: '#475569' }}>
+                  <p className="text-xs" style={{ color: '#475569', lineHeight: '1.4' }}>
                     {workshop.endereco} - {workshop.cidadeUf}
                   </p>
-                  <p className="text-xs font-bold" style={{ color: '#1e293b' }}>
+                  <p className="text-xs font-bold" style={{ color: '#1e293b', lineHeight: '1.4' }}>
                     WhatsApp: {workshop.telefoneWhatsApp} {workshop.telefoneFixo ? `| Fixo: ${workshop.telefoneFixo}` : ''}
                   </p>
                 </div>
@@ -328,17 +504,17 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                 className="text-right p-3.5 rounded-xl shrink-0"
                 style={{ backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1' }}
               >
-                <span className="block text-[10px] font-bold uppercase tracking-wider" style={{ color: '#64748b' }}>
+                <span className="block text-[10px] font-bold uppercase" style={{ color: '#64748b', lineHeight: '1.3' }}>
                   {quote.tipoOrcamento === 'polimento_estetica'
                     ? 'Orçamento de Polimento & Estética'
                     : quote.tipoOrcamento === 'misto'
                     ? 'Orçamento de Funilaria & Polimento'
                     : 'Orçamento de Funilaria e Pintura'}
                 </span>
-                <span className="block text-lg font-black font-mono" style={{ color: '#0f172a' }}>
+                <span className="block text-lg font-black font-mono" style={{ color: '#0f172a', lineHeight: '1.2', marginTop: '2px' }}>
                   {quote.numero}
                 </span>
-                <div className="mt-1.5 text-xs space-y-0.5" style={{ color: '#475569' }}>
+                <div className="mt-1.5 text-xs space-y-0.5" style={{ color: '#475569', lineHeight: '1.4' }}>
                   <p>
                     <strong>Emissão:</strong> {new Date(quote.dataCriacao).toLocaleDateString('pt-BR')}
                   </p>
@@ -353,72 +529,78 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
             <div className="grid grid-cols-2 gap-4 print-avoid-break">
               {/* Caixa Cliente */}
               <div
-                className="p-3.5 rounded-xl space-y-1 text-xs"
+                className="p-3.5 rounded-xl space-y-1.5 text-xs"
                 style={{ backgroundColor: '#f8fafc', border: '1px solid #cbd5e1' }}
               >
-                <span
-                  className="font-bold text-xs uppercase tracking-wider block mb-1 pb-1"
-                  style={{ color: '#0f172a', borderBottom: '1px solid #e2e8f0' }}
+                <div
+                  className="font-bold text-xs uppercase block mb-1 pb-1"
+                  style={{ color: '#0f172a', borderBottom: '1px solid #e2e8f0', lineHeight: '1.4' }}
                 >
                   Dados do Cliente
-                </span>
-                <p>
-                  <strong style={{ color: '#334155' }}>Nome:</strong>{' '}
+                </div>
+                <div style={{ lineHeight: '1.4' }}>
+                  <strong style={{ color: '#334155' }}>Nome: </strong>
                   <span className="font-bold text-sm" style={{ color: '#0f172a' }}>{quote.cliente.nome}</span>
-                </p>
-                <p>
-                  <strong style={{ color: '#334155' }}>Telefone / WhatsApp:</strong>{' '}
+                </div>
+                <div style={{ lineHeight: '1.4' }}>
+                  <strong style={{ color: '#334155' }}>Telefone / WhatsApp: </strong>
                   <span style={{ color: '#1e293b' }}>{quote.cliente.telefone || 'Não informado'}</span>
-                </p>
+                </div>
                 {quote.cliente.documento && (
-                  <p>
-                    <strong style={{ color: '#334155' }}>CPF / CNPJ:</strong>{' '}
+                  <div style={{ lineHeight: '1.4' }}>
+                    <strong style={{ color: '#334155' }}>CPF / CNPJ: </strong>
                     <span style={{ color: '#1e293b' }}>{quote.cliente.documento}</span>
-                  </p>
+                  </div>
                 )}
               </div>
 
               {/* Caixa Veículo */}
               <div
-                className="p-3.5 rounded-xl space-y-1 text-xs"
+                className="p-3.5 rounded-xl space-y-1.5 text-xs"
                 style={{ backgroundColor: '#f8fafc', border: '1px solid #cbd5e1' }}
               >
-                <span
-                  className="font-bold text-xs uppercase tracking-wider block mb-1 pb-1"
-                  style={{ color: '#0f172a', borderBottom: '1px solid #e2e8f0' }}
+                <div
+                  className="font-bold text-xs uppercase block mb-1 pb-1"
+                  style={{ color: '#0f172a', borderBottom: '1px solid #e2e8f0', lineHeight: '1.4' }}
                 >
                   Identificação do Veículo
-                </span>
-                <p>
-                  <strong style={{ color: '#334155' }}>Veículo / Modelo:</strong>{' '}
+                </div>
+                <div style={{ lineHeight: '1.4' }}>
+                  <strong style={{ color: '#334155' }}>Veículo / Modelo: </strong>
                   <span className="font-bold text-sm" style={{ color: '#0f172a' }}>
                     {quote.veiculo.marca ? `${quote.veiculo.marca} ` : ''}{quote.veiculo.modelo || 'Veículo'}
                   </span>
-                </p>
-                <p className="flex items-center gap-2 pt-0.5">
-                  <strong style={{ color: '#334155' }}>Placa Oficial:</strong>{' '}
+                </div>
+                <div className="flex items-center gap-2 pt-0.5" style={{ lineHeight: '1.4' }}>
+                  <strong style={{ color: '#334155' }}>Placa Oficial: </strong>
                   <span
-                    className="font-mono font-black px-2.5 py-0.5 rounded text-xs tracking-wider"
+                    className="font-mono font-bold px-2.5 py-0.5 rounded text-xs"
                     style={{ backgroundColor: '#e2e8f0', color: '#0f172a', border: '1px solid #94a3b8' }}
                   >
                     {quote.veiculo.placa || 'A DEFINIR'}
                   </span>
-                </p>
+                </div>
               </div>
             </div>
 
-            {/* Tabela de Serviços: Mão de Obra e Polimento com Larguras Fixas e Alinhamento Rigoroso */}
+            {/* Tabela de Serviços: Larguras Fixas Estabilizadas com colgroup e sem sobreposição */}
             <div
               className="rounded-xl overflow-hidden print-avoid-break shadow-sm w-full"
               style={{ border: '1px solid #cbd5e1' }}
             >
-              <table className="w-full text-left text-xs border-collapse" style={{ tableLayout: 'fixed' }}>
+              <table className="w-full text-left text-xs border-collapse" style={{ tableLayout: 'fixed', width: '100%' }}>
+                <colgroup>
+                  <col style={{ width: '42px' }} />
+                  <col style={{ width: '350px' }} />
+                  <col style={{ width: '180px' }} />
+                  <col style={{ width: '146px' }} />
+                </colgroup>
                 <thead>
                   <tr style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
-                    <th style={{ width: '44px', padding: '10px 8px', textAlign: 'center' }} className="text-[10px] uppercase font-bold tracking-wider">#</th>
-                    <th style={{ padding: '10px 12px' }} className="text-[10px] uppercase font-bold tracking-wider">Peça / Serviço</th>
-                    <th style={{ width: '180px', padding: '10px 12px' }} className="text-[10px] uppercase font-bold tracking-wider">Discriminação</th>
-                    <th style={{ width: '144px', padding: '10px 14px', textAlign: 'right' }} className="text-[10px] uppercase font-bold tracking-wider whitespace-nowrap">Preço (R$)</th>
+                    <th style={{ width: '42px', padding: '9px 6px', textAlign: 'center' }} className="text-[10px] uppercase font-bold">#</th>
+                    <th style={{ width: '350px', padding: '9px 12px' }} className="text-[10px] uppercase font-bold">Peça / Serviço</th>
+                    <th style={{ width: '180px', padding: '9px 12px' }} className="text-[10px] uppercase font-bold">Discriminação</th>
+                    <th style={{ width: '146px', padding: '9px 12px', textAlign: 'right' }} className="text-[10px] uppercase font-bold whitespace-nowrap">Preço (R$)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -433,20 +615,20 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                           borderBottom: '1px solid #e2e8f0',
                         }}
                       >
-                        <td style={{ width: '44px', padding: '10px 8px', textAlign: 'center' }} className="font-bold text-xs text-slate-500">
+                        <td style={{ width: '42px', padding: '9px 6px', textAlign: 'center', verticalAlign: 'middle' }} className="font-bold text-xs text-slate-500">
                           {idx + 1}
                         </td>
-                        <td style={{ padding: '10px 12px' }}>
-                          <span className="font-bold block text-xs leading-snug" style={{ color: '#0f172a' }}>
+                        <td style={{ width: '350px', padding: '9px 12px', verticalAlign: 'middle' }}>
+                          <div style={{ color: '#0f172a', fontWeight: 700, fontSize: '12px', lineHeight: '1.35' }}>
                             {item.nomePeca}
-                          </span>
+                          </div>
                           {item.observacoes && (
-                            <span className="text-[10px] text-slate-500 block mt-0.5">
+                            <div style={{ color: '#64748b', fontSize: '10px', lineHeight: '1.3', marginTop: '2px' }}>
                               Obs: {item.observacoes}
-                            </span>
+                            </div>
                           )}
                         </td>
-                        <td style={{ width: '180px', padding: '10px 12px' }}>
+                        <td style={{ width: '180px', padding: '9px 12px', verticalAlign: 'middle' }}>
                           {isPolishing ? (
                             <span
                               className="inline-block px-2.5 py-1 rounded text-[10px] font-bold"
@@ -454,6 +636,7 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                                 backgroundColor: '#fef3c7',
                                 color: '#92400e',
                                 border: '1px solid #fcd34d',
+                                whiteSpace: 'nowrap',
                               }}
                             >
                               Polimento & Estética
@@ -465,13 +648,14 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                                 backgroundColor: '#dbeafe',
                                 color: '#1e40af',
                                 border: '1px solid #93c5fd',
+                                whiteSpace: 'nowrap',
                               }}
                             >
                               Mão de Obra & Pintura
                             </span>
                           )}
                         </td>
-                        <td style={{ width: '144px', padding: '10px 14px', textAlign: 'right' }} className="font-black text-sm whitespace-nowrap tabular-nums text-slate-900">
+                        <td style={{ width: '146px', padding: '9px 12px', textAlign: 'right', verticalAlign: 'middle' }} className="font-black text-sm whitespace-nowrap tabular-nums text-slate-900">
                           {formatCurrencyBRL(item.valorTotalItem)}
                         </td>
                       </tr>
@@ -497,7 +681,7 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                   style={{ borderBottom: '1px solid #334155' }}
                 >
                   <span
-                    className="font-bold text-xs uppercase tracking-wider flex items-center gap-1.5"
+                    className="font-bold text-xs uppercase flex items-center gap-1.5"
                     style={{ color: '#facc15' }}
                   >
                     <ShieldCheck className="w-4 h-4 text-yellow-400 shrink-0" />
@@ -521,7 +705,7 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                     }}
                   >
                     <span
-                      className="block text-[10px] uppercase font-bold tracking-wider"
+                      className="block text-[10px] uppercase font-bold"
                       style={{ color: '#6ee7b7' }}
                     >
                       Sinal de Entrada (50%):
@@ -542,7 +726,7 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                     }}
                   >
                     <span
-                      className="block text-[10px] uppercase font-bold tracking-wider"
+                      className="block text-[10px] uppercase font-bold"
                       style={{ color: '#94a3b8' }}
                     >
                       Saldo na Entrega (50%):
@@ -570,7 +754,7 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                     </span>
                     <div className="flex items-center gap-1.5 overflow-hidden">
                       <span
-                        className="font-mono font-bold select-all text-sm tracking-wider px-2.5 py-1 rounded-lg truncate"
+                        className="font-mono font-bold select-all text-sm px-2.5 py-1 rounded-lg truncate"
                         style={{
                           backgroundColor: '#0f172a',
                           color: '#facc15',
@@ -680,119 +864,155 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
           </div>
 
           {/* PÁGINAS DO LAUDO FOTOGRÁFICO DE REGISTRO DE AVARIAS (IMPRESSO COM O ORÇAMENTO) */}
-          {hasPhotos && photoPages.map((pagePhotos, pageIndex) => (
-            <div
-              key={`photo-page-${pageIndex}`}
-              className="pdf-page bg-white shadow-2xl rounded-xl space-y-4 print:shadow-none print:m-0 print:rounded-none print-page-break"
-              style={{
-                width: '794px',
-                minWidth: '794px',
-                maxWidth: '794px',
-                padding: '36px 40px',
-                boxSizing: 'border-box',
-                backgroundColor: '#ffffff',
-                color: '#0f172a',
-              }}
-            >
-              {/* Cabeçalho do Laudo Fotográfico */}
+          {hasPhotos && photoPages.map((pagePhotos, pageIndex) => {
+            const gridColsClass = photoLayout === '2_per_page' 
+              ? 'grid-cols-2 gap-5' 
+              : photoLayout === '6_per_page' 
+              ? 'grid-cols-2 gap-3' 
+              : 'grid-cols-2 gap-4';
+
+            const imageHeightClass = photoLayout === '2_per_page' 
+              ? 'h-64' 
+              : photoLayout === '6_per_page' 
+              ? 'h-32' 
+              : 'h-44';
+
+            return (
               <div
-                className="pb-3 flex items-center justify-between gap-3"
-                style={{ borderBottom: '2px solid #0f172a' }}
+                key={`photo-page-${pageIndex}`}
+                className="pdf-page bg-white shadow-2xl rounded-xl space-y-4 print:shadow-none print:m-0 print:rounded-none print-page-break"
+                style={{
+                  width: '794px',
+                  minWidth: '794px',
+                  maxWidth: '794px',
+                  padding: '36px 40px',
+                  boxSizing: 'border-box',
+                  backgroundColor: '#ffffff',
+                  color: '#0f172a',
+                }}
               >
-                <div className="flex items-center gap-2.5">
-                  {workshop.logotipoUrl ? (
-                    <img
-                      src={workshop.logotipoUrl}
-                      alt={workshop.nomeOficina}
-                      className="h-10 max-w-[130px] object-contain rounded"
-                      crossOrigin="anonymous"
-                    />
-                  ) : (
-                    <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center shadow-sm"
-                      style={{ backgroundColor: '#0f172a', color: '#ffffff' }}
-                    >
-                      <Camera className="w-4 h-4 text-blue-400" />
+                {/* Cabeçalho do Laudo Fotográfico */}
+                <div
+                  className="pb-3 flex items-center justify-between gap-3"
+                  style={{ borderBottom: '2px solid #0f172a' }}
+                >
+                  <div className="flex items-center gap-2.5">
+                    {workshop.logotipoUrl ? (
+                      <img
+                        src={workshop.logotipoUrl}
+                        alt={workshop.nomeOficina}
+                        className="h-10 max-w-[130px] object-contain rounded"
+                        crossOrigin="anonymous"
+                      />
+                    ) : (
+                      <div
+                        className="w-8 h-8 rounded-lg flex items-center justify-center shadow-sm"
+                        style={{ backgroundColor: '#0f172a', color: '#ffffff' }}
+                      >
+                        <Camera className="w-4 h-4 text-blue-400" />
+                      </div>
+                    )}
+                    <div>
+                      <h2 className="text-sm font-bold uppercase" style={{ color: '#0f172a' }}>
+                        Laudo Fotográfico de Registro de Avarias & Vistoria
+                      </h2>
+                      <p className="text-[11px]" style={{ color: '#475569' }}>
+                        Anexo Oficial do Orçamento Nº <strong style={{ color: '#0f172a' }}>{quote.numero}</strong> • Veículo:{' '}
+                        <strong style={{ color: '#0f172a' }}>{quote.veiculo.marca} {quote.veiculo.modelo} ({quote.veiculo.placa})</strong>
+                      </p>
                     </div>
-                  )}
-                  <div>
-                    <h2 className="text-sm font-black uppercase tracking-wider" style={{ color: '#0f172a' }}>
-                      Laudo Fotográfico de Registro de Avarias & Vistoria
-                    </h2>
-                    <p className="text-[11px]" style={{ color: '#475569' }}>
-                      Anexo Oficial do Orçamento Nº <strong style={{ color: '#0f172a' }}>{quote.numero}</strong> • Veículo:{' '}
-                      <strong style={{ color: '#0f172a' }}>{quote.veiculo.marca} {quote.veiculo.modelo} ({quote.veiculo.placa})</strong>
+                  </div>
+
+                  <div className="text-right text-[11px] font-semibold" style={{ color: '#64748b' }}>
+                    <span
+                      className="px-2 py-0.5 rounded font-mono text-xs"
+                      style={{ backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1', color: '#0f172a' }}
+                    >
+                      Página {pageIndex + 2} de {photoPages.length + 1}
+                    </span>
+                    <p className="text-[10px] mt-0.5" style={{ color: '#64748b' }}>
+                      Fotos {pageIndex * chunkSize + 1} a {Math.min((pageIndex + 1) * chunkSize, photosList.length)} de {photosList.length}
                     </p>
                   </div>
                 </div>
 
-                <div className="text-right text-[11px] font-semibold" style={{ color: '#64748b' }}>
-                  <span
-                    className="px-2 py-0.5 rounded font-mono text-xs"
-                    style={{ backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1', color: '#0f172a' }}
-                  >
-                    Página {pageIndex + 2} de {photoPages.length + 1}
-                  </span>
-                  <p className="text-[10px] mt-0.5" style={{ color: '#64748b' }}>
-                    Fotos {pageIndex * 4 + 1} a {Math.min((pageIndex + 1) * 4, quote.fotosAvarias!.length)} de {quote.fotosAvarias!.length}
-                  </p>
-                </div>
-              </div>
-
-              {/* Grade de Fotos do Laudo: 2 Colunas x até 2 Linhas por página para enquadramento perfeito */}
-              <div className="grid grid-cols-2 gap-4">
-                {pagePhotos.map((foto, index) => {
-                  const globalIndex = pageIndex * 4 + index;
-                  return (
-                    <div
-                      key={foto.id}
-                      className="rounded-xl overflow-hidden flex flex-col shadow-sm"
-                      style={{ border: '1px solid #cbd5e1', backgroundColor: '#ffffff' }}
-                    >
-                      {/* Imagem com proporção estabilizada */}
-                      <div className="relative w-full h-48 bg-white overflow-hidden flex items-center justify-center">
-                        <img
-                          src={foto.url}
-                          alt={foto.descricao}
-                          className="w-full h-full object-cover block"
-                          crossOrigin="anonymous"
-                        />
-                        <span
-                          className="absolute top-2 left-2 font-mono font-bold text-[10px] px-2 py-0.5 rounded shadow"
-                          style={{ backgroundColor: '#0f172a', color: '#ffffff' }}
-                        >
-                          Registro #{globalIndex + 1}
-                        </span>
-                      </div>
-
-                      {/* Descrição e Data */}
+                {/* Grade de Fotos do Laudo: Configuração de Colunas e Altura Estabilizada */}
+                <div className={`grid ${gridColsClass}`}>
+                  {pagePhotos.map((foto, index) => {
+                    const globalIndex = pageIndex * chunkSize + index;
+                    return (
                       <div
-                        className="p-2.5 space-y-1"
-                        style={{ backgroundColor: '#f8fafc', borderTop: '1px solid #e2e8f0' }}
+                        key={foto.id}
+                        className="rounded-xl overflow-hidden flex flex-col shadow-sm"
+                        style={{ border: '1px solid #cbd5e1', backgroundColor: '#ffffff' }}
                       >
-                        <p className="font-bold text-[11px] leading-tight line-clamp-2" style={{ color: '#0f172a' }}>
-                          {foto.descricao || `Avaria documentada #${globalIndex + 1}`}
-                        </p>
-                        <div className="flex items-center justify-between text-[9px] pt-0.5" style={{ color: '#64748b' }}>
-                          <span>Data do Registro: {foto.dataHora}</span>
-                          <span className="font-bold" style={{ color: '#1d4ed8' }}>AutoGold Inspeção</span>
+                        {/* Imagem com proporção estabilizada e enquadramento seguro */}
+                        <div
+                          className={`relative w-full ${imageHeightClass} overflow-hidden flex items-center justify-center`}
+                          style={{ backgroundColor: '#f8fafc' }}
+                        >
+                          <img
+                            src={foto.url}
+                            alt={foto.descricao}
+                            className={`w-full h-full block select-none ${
+                              photoFit === 'contain' ? 'object-contain' : 'object-cover'
+                            }`}
+                            crossOrigin="anonymous"
+                          />
+                          <span
+                            className="absolute top-2 left-2 font-mono font-bold text-[10px] px-2 py-0.5 rounded shadow"
+                            style={{ backgroundColor: '#0f172a', color: '#ffffff' }}
+                          >
+                            Registro #{globalIndex + 1}
+                          </span>
+
+                          {/* Botão de Girar Foto 90° (Visível no preview, oculto na impressão / PDF) */}
+                          <button
+                            type="button"
+                            onClick={() => handleRotatePhoto(foto.id)}
+                            disabled={rotatingPhotoId === foto.id}
+                            title="Girar foto 90° no sentido horário"
+                            className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/75 hover:bg-blue-600 text-white transition-colors cursor-pointer print:hidden shadow-md disabled:opacity-50"
+                          >
+                            {rotatingPhotoId === foto.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
+                            ) : (
+                              <RotateCw className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        </div>
+
+                        {/* Descrição e Data */}
+                        <div
+                          className="p-2.5 space-y-1"
+                          style={{ backgroundColor: '#ffffff', borderTop: '1px solid #e2e8f0' }}
+                        >
+                          <p className="font-bold text-[11px] leading-tight line-clamp-2" style={{ color: '#0f172a' }}>
+                            {foto.descricao || `Avaria documentada #${globalIndex + 1}`}
+                          </p>
+                          <div className="flex items-center justify-between text-[9px] pt-0.5" style={{ color: '#64748b' }}>
+                            <span>Data do Registro: {foto.dataHora}</span>
+                            <span className="font-bold" style={{ color: '#1d4ed8' }}>AutoGold Inspeção</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
 
-              {/* Rodapé do Laudo */}
-              <div
-                className="pt-3 flex justify-between items-center text-[10px]"
-                style={{ borderTop: '1px solid #e2e8f0', color: '#64748b' }}
-              >
-                <span>Documento fotográfico autenticado pela oficina {workshop.nomeOficina}</span>
-                <span className="font-mono font-bold">{quote.numero}</span>
+                {/* Rodapé do Laudo */}
+                <div
+                  className="pt-3 flex justify-between items-center text-[10px]"
+                  style={{ borderTop: '1px solid #e2e8f0', color: '#64748b' }}
+                >
+                  <span>Documento fotográfico autenticado pela oficina {workshop.nomeOficina}</span>
+                  <span className="font-mono font-bold">{quote.numero}</span>
+                </div>
               </div>
+            );
+          })}
             </div>
-          ))}
+          </div>
         </div>
       </div>
     </div>
