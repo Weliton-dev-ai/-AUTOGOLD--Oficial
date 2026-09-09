@@ -60,9 +60,22 @@ export async function generateQuotePdf(
   container.style.minWidth = '794px';
 
   // Breve espera para o motor de layout do navegador atualizar o DOM em 794px reais
-  await new Promise((resolve) => setTimeout(resolve, 60));
+  await new Promise((resolve) => setTimeout(resolve, 80));
 
   try {
+    // 1. Garantir que todas as imagens no container estejam carregadas e prontas
+    const allImages = Array.from(container.querySelectorAll<HTMLImageElement>('img'));
+    await Promise.all(
+      allImages.map((img) => {
+        if (img.complete && img.naturalWidth > 0) return Promise.resolve(true);
+        return new Promise((resolve) => {
+          img.onload = () => resolve(true);
+          img.onerror = () => resolve(false);
+          setTimeout(() => resolve(false), 1200);
+        });
+      })
+    );
+
     // Verificar se há páginas demarcadas (.pdf-page)
     const pageElements = Array.from(container.querySelectorAll<HTMLElement>('.pdf-page'));
 
@@ -71,35 +84,67 @@ export async function generateQuotePdf(
       for (let i = 0; i < pageElements.length; i++) {
         const pageEl = pageElements[i];
 
+        // Certificar que todas as imagens desta página estão prontas
+        const pageImgs = Array.from(pageEl.querySelectorAll<HTMLImageElement>('img'));
+        await Promise.all(
+          pageImgs.map((img) => {
+            if (img.complete && img.naturalWidth > 0) return Promise.resolve(true);
+            return new Promise((resolve) => {
+              img.onload = () => resolve(true);
+              img.onerror = () => resolve(false);
+              setTimeout(() => resolve(false), 800);
+            });
+          })
+        );
+
         const canvas = await html2canvas(pageEl, {
           scale: 2, // 2x exato (sem frações) para evitar borrões e erros de interpolação subpixel
           useCORS: true,
-          allowTaint: true,
+          allowTaint: false, // CRÍTICO: false impede SecurityError no canvas.toDataURL()
           logging: false,
           backgroundColor: '#FFFFFF',
           width: 794,
           windowWidth: 794,
           scrollX: 0,
           scrollY: 0,
+          imageTimeout: 15000,
           onclone: (clonedDoc, clonedEl) => {
-            // 1. Limpar transforms de TODOS os ancestrais no documento clonado
-            let curr: HTMLElement | null = clonedEl;
-            while (curr) {
-              curr.style.transform = 'none';
-              curr.style.webkitTransform = 'none';
-              curr.style.margin = '0 auto';
-              curr = curr.parentElement;
-            }
+            // ISOLAMENTO TOTAL DA PÁGINA:
+            // Esvaziamos o body do documento clonado e anexamos SOMENTE a página atual no topo (0,0).
+            // Isso resolve de forma definitiva o problema onde a Página 2 (fotos) ficava em branco ou deslocada
+            // devido ao offsetTop acumulado pelas páginas anteriores.
+            clonedDoc.body.innerHTML = '';
+            clonedDoc.body.style.margin = '0';
+            clonedDoc.body.style.padding = '0';
+            clonedDoc.body.style.backgroundColor = '#FFFFFF';
+            clonedDoc.body.style.overflow = 'visible';
 
+            clonedEl.style.transform = 'none';
+            clonedEl.style.webkitTransform = 'none';
+            clonedEl.style.margin = '0 auto';
+            clonedEl.style.position = 'relative';
+            clonedEl.style.top = '0';
+            clonedEl.style.left = '0';
             clonedEl.style.width = '794px';
             clonedEl.style.maxWidth = '794px';
             clonedEl.style.minWidth = '794px';
             clonedEl.style.boxSizing = 'border-box';
             clonedEl.style.backgroundColor = '#FFFFFF';
-            clonedEl.style.margin = '0 auto';
-            clonedEl.style.transform = 'none';
 
-            // 2. Injetar folha de estilo para eliminar definitivamente sobreposição de letras e manchas
+            clonedDoc.body.appendChild(clonedEl);
+
+            // Oculta tags <img> que estão dentro de wrappers que já possuem background-image ativo.
+            // O html2canvas possui suporte nativo impecável a background-image (contain/cover),
+            // enquanto CSS object-fit em tags <img> é instável no html2canvas.
+            const clonedImgs = Array.from(clonedEl.querySelectorAll<HTMLImageElement>('img'));
+            clonedImgs.forEach((img) => {
+              const p = img.parentElement;
+              if (p && p.style.backgroundImage && p.style.backgroundImage.includes('url')) {
+                img.style.opacity = '0';
+              }
+            });
+
+            // Injetar folha de estilo para eliminar definitivamente sobreposição de letras e manchas
             const style = clonedDoc.createElement('style');
             style.innerHTML = `
               * {
@@ -119,6 +164,9 @@ export async function generateQuotePdf(
                 color: #0f172a !important;
                 transform: none !important;
                 margin: 0 auto !important;
+                position: relative !important;
+                top: 0 !important;
+                left: 0 !important;
               }
               table {
                 table-layout: fixed !important;
@@ -177,13 +225,14 @@ export async function generateQuotePdf(
       const canvas = await html2canvas(container, {
         scale: 2,
         useCORS: true,
-        allowTaint: true,
+        allowTaint: false,
         logging: false,
         backgroundColor: '#FFFFFF',
         width: 794,
         windowWidth: 794,
         scrollX: 0,
         scrollY: 0,
+        imageTimeout: 15000,
         onclone: (clonedDoc, clonedEl) => {
           let curr: HTMLElement | null = clonedEl;
           while (curr) {

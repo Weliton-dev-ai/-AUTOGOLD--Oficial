@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Printer, 
   Send, 
@@ -14,13 +14,15 @@ import {
   RotateCw,
   Maximize2,
   Sliders,
-  ZoomIn
+  ZoomIn,
+  Plus,
+  Trash2
 } from 'lucide-react';
 import { Quote, WorkshopProfile, DamagePhoto } from '../types';
 import { formatCurrencyBRL } from '../utils/calculator';
 import { generateWhatsAppMessage, openWhatsAppDirect } from '../utils/whatsapp';
 import { downloadQuotePdf, sharePdfOrWhatsApp } from '../utils/pdfGenerator';
-import { rotateImageDataUrl } from '../utils/imageCompressor';
+import { rotateImageDataUrl, compressImage } from '../utils/imageCompressor';
 
 interface QuotePrintModalProps {
   quote: Quote;
@@ -48,6 +50,8 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
   const [fitScreen, setFitScreen] = useState(true);
   const [screenWidth, setScreenWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Sincronizar fotos caso a prop mude
   useEffect(() => {
     setPhotosList(quote.fotosAvarias || []);
@@ -66,6 +70,65 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
     const availableWidth = screenWidth - 24;
     return Math.min(1, Math.max(0.38, availableWidth / 794));
   }, [fitScreen, screenWidth]);
+
+  // Adicionar novas fotos diretamente no laudo
+  const handleAddPhotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setFeedbackMsg({ type: 'info', text: 'Otimizando e anexando fotos ao orçamento...' });
+    try {
+      const newPhotos: DamagePhoto[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const dataUrl = await compressImage(file, 1920, 0.92);
+        const dataFormatada = new Date().toLocaleString('pt-BR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+        newPhotos.push({
+          id: `foto_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+          url: dataUrl,
+          descricao: `Registro de Avaria / Vistoria - ${quote.veiculo.modelo}`,
+          dataHora: dataFormatada,
+        });
+      }
+
+      const updated = [...photosList, ...newPhotos];
+      setPhotosList(updated);
+      if (onUpdateQuote) {
+        onUpdateQuote({
+          ...quote,
+          fotosAvarias: updated,
+        });
+      }
+      setFeedbackMsg({ type: 'success', text: `${newPhotos.length} foto(s) anexada(s) ao orçamento e PDF!` });
+      setTimeout(() => setFeedbackMsg(null), 3000);
+    } catch (err) {
+      console.error('Erro ao adicionar fotos:', err);
+      setFeedbackMsg({ type: 'error', text: 'Não foi possível processar as imagens.' });
+      setTimeout(() => setFeedbackMsg(null), 3000);
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  // Remover foto específica do laudo
+  const handleRemovePhoto = (photoId: string) => {
+    const updated = photosList.filter((p) => p.id !== photoId);
+    setPhotosList(updated);
+    if (onUpdateQuote) {
+      onUpdateQuote({
+        ...quote,
+        fotosAvarias: updated,
+      });
+    }
+    setFeedbackMsg({ type: 'info', text: 'Foto removida do orçamento.' });
+    setTimeout(() => setFeedbackMsg(null), 2500);
+  };
 
   // Girar foto em 90 graus no laudo e persistir
   const handleRotatePhoto = async (photoId: string) => {
@@ -307,6 +370,16 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
 
         {/* Barra de Ajuste de Visualização, Layout e Orientação de Fotos (Oculta na Impressão) */}
         <div className="bg-[#0f172a] border-b border-[#1E3349] px-3 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-2.5 text-xs text-slate-300 print:hidden">
+          {/* Input oculto para carregar fotos diretamente */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/*"
+            onChange={handleAddPhotos}
+            className="hidden"
+          />
+
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {/* Ajuste de Enquadramento na Tela (Mobile / Tablet / PC) */}
             <div className="flex items-center gap-1.5">
@@ -324,6 +397,17 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                 <span>{fitScreen && previewScale < 1 ? 'Ajustado à Tela' : 'Tamanho 100%'}</span>
               </button>
             </div>
+
+            {/* Botão de Adicionar / Anexar Fotos diretamente */}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm border border-emerald-500"
+              title="Anexar fotos do veículo ou peças danificadas ao laudo pericial"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Adicionar Fotos</span>
+            </button>
 
             {hasPhotos && (
               <>
@@ -464,12 +548,24 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
             >
               <div className="flex items-center gap-4">
                 {workshop.logotipoUrl ? (
-                  <img
-                    src={workshop.logotipoUrl}
-                    alt={workshop.nomeOficina}
-                    className="h-16 max-w-[180px] object-contain rounded shrink-0"
-                    crossOrigin="anonymous"
-                  />
+                  <div
+                    className="h-16 max-w-[180px] flex items-center justify-start shrink-0"
+                    style={{
+                      backgroundImage: `url("${workshop.logotipoUrl}")`,
+                      backgroundSize: 'contain',
+                      backgroundPosition: 'left center',
+                      backgroundRepeat: 'no-repeat',
+                      width: '180px',
+                      height: '64px',
+                    }}
+                  >
+                    <img
+                      src={workshop.logotipoUrl}
+                      alt={workshop.nomeOficina}
+                      className="h-16 max-w-[180px] object-contain rounded shrink-0 opacity-0 pointer-events-none"
+                      loading="eager"
+                    />
+                  </div>
                 ) : (
                   <div
                     className="w-16 h-16 rounded-xl flex flex-col items-center justify-center font-black shadow-sm shrink-0"
@@ -863,6 +959,32 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
             {/* FIM DA PÁGINA 1 */}
           </div>
 
+          {/* BANNER PARA ANEXAR FOTOS SE O ORÇAMENTO NÃO POSSUIR AINDA */}
+          {!hasPhotos && (
+            <div className="w-[794px] bg-[#121E2B] border-2 border-dashed border-[#1E3349] hover:border-blue-500/50 rounded-2xl p-6 text-center text-slate-300 space-y-3 print:hidden shadow-xl transition-all">
+              <div className="w-12 h-12 mx-auto rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400">
+                <Camera className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">Anexar Fotos ao Laudo do Orçamento</h3>
+                <p className="text-xs text-slate-400 max-w-md mx-auto mt-1">
+                  Deseja incluir fotos de avarias, peças danificadas ou vistoria do veículo?
+                  Elas serão inseridas nas próximas folhas do PDF oficial em alta resolução com laudo timbrado.
+                </p>
+              </div>
+              <div>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs inline-flex items-center gap-2 shadow-lg shadow-blue-600/30 cursor-pointer transition-all"
+                >
+                  <Camera className="w-4 h-4" />
+                  <span>Selecionar e Anexar Fotos Agora</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* PÁGINAS DO LAUDO FOTOGRÁFICO DE REGISTRO DE AVARIAS (IMPRESSO COM O ORÇAMENTO) */}
           {hasPhotos && photoPages.map((pagePhotos, pageIndex) => {
             const gridColsClass = photoLayout === '2_per_page' 
@@ -898,12 +1020,24 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                 >
                   <div className="flex items-center gap-2.5">
                     {workshop.logotipoUrl ? (
-                      <img
-                        src={workshop.logotipoUrl}
-                        alt={workshop.nomeOficina}
-                        className="h-10 max-w-[130px] object-contain rounded"
-                        crossOrigin="anonymous"
-                      />
+                      <div
+                        className="h-10 max-w-[130px] flex items-center justify-start shrink-0"
+                        style={{
+                          backgroundImage: `url("${workshop.logotipoUrl}")`,
+                          backgroundSize: 'contain',
+                          backgroundPosition: 'left center',
+                          backgroundRepeat: 'no-repeat',
+                          width: '130px',
+                          height: '40px',
+                        }}
+                      >
+                        <img
+                          src={workshop.logotipoUrl}
+                          alt={workshop.nomeOficina}
+                          className="h-10 max-w-[130px] object-contain rounded opacity-0 pointer-events-none"
+                          loading="eager"
+                        />
+                      </div>
                     ) : (
                       <div
                         className="w-8 h-8 rounded-lg flex items-center justify-center shadow-sm"
@@ -946,18 +1080,24 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                         className="rounded-xl overflow-hidden flex flex-col shadow-sm"
                         style={{ border: '1px solid #cbd5e1', backgroundColor: '#ffffff' }}
                       >
-                        {/* Imagem com proporção estabilizada e enquadramento seguro */}
+                        {/* Imagem com proporção estabilizada, background-image nativo para html2canvas e enquadramento seguro */}
                         <div
                           className={`relative w-full ${imageHeightClass} overflow-hidden flex items-center justify-center`}
-                          style={{ backgroundColor: '#f8fafc' }}
+                          style={{
+                            backgroundColor: '#0f172a',
+                            backgroundImage: `url("${foto.url}")`,
+                            backgroundSize: photoFit === 'contain' ? 'contain' : 'cover',
+                            backgroundPosition: 'center center',
+                            backgroundRepeat: 'no-repeat',
+                          }}
                         >
                           <img
                             src={foto.url}
-                            alt={foto.descricao}
+                            alt={foto.descricao || 'Foto de avaria'}
                             className={`w-full h-full block select-none ${
                               photoFit === 'contain' ? 'object-contain' : 'object-cover'
                             }`}
-                            crossOrigin="anonymous"
+                            loading="eager"
                           />
                           <span
                             className="absolute top-2 left-2 font-mono font-bold text-[10px] px-2 py-0.5 rounded shadow"
@@ -966,20 +1106,32 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                             Registro #{globalIndex + 1}
                           </span>
 
-                          {/* Botão de Girar Foto 90° (Visível no preview, oculto na impressão / PDF) */}
-                          <button
-                            type="button"
-                            onClick={() => handleRotatePhoto(foto.id)}
-                            disabled={rotatingPhotoId === foto.id}
-                            title="Girar foto 90° no sentido horário"
-                            className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/75 hover:bg-blue-600 text-white transition-colors cursor-pointer print:hidden shadow-md disabled:opacity-50"
-                          >
-                            {rotatingPhotoId === foto.id ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
-                            ) : (
-                              <RotateCw className="w-3.5 h-3.5" />
-                            )}
-                          </button>
+                          <div className="absolute top-2 right-2 flex items-center gap-1.5 print:hidden">
+                            {/* Botão de Girar Foto 90° (Visível no preview, oculto na impressão / PDF) */}
+                            <button
+                              type="button"
+                              onClick={() => handleRotatePhoto(foto.id)}
+                              disabled={rotatingPhotoId === foto.id}
+                              title="Girar foto 90° no sentido horário"
+                              className="p-1.5 rounded-lg bg-black/75 hover:bg-blue-600 text-white transition-colors cursor-pointer shadow-md disabled:opacity-50"
+                            >
+                              {rotatingPhotoId === foto.id ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
+                              ) : (
+                                <RotateCw className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+
+                            {/* Botão de Remover Foto */}
+                            <button
+                              type="button"
+                              onClick={() => handleRemovePhoto(foto.id)}
+                              title="Remover esta foto do laudo"
+                              className="p-1.5 rounded-lg bg-black/75 hover:bg-red-600 text-white transition-colors cursor-pointer shadow-md"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
 
                         {/* Descrição e Data */}
