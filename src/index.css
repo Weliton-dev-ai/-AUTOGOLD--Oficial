@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+/* Otimizações Globais de Impressão e PDF */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm 10mm 12mm 10mm;
+  }
+
+  /* Forçar navegador a respeitar cores de fundo, bordas e destaques no PDF */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  html, body {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    font-size: 11pt !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Ocultar elementos fora do documento impresso */
+  #app-header,
+  #nav-tabs-bar,
+  main,
+  .print-hidden,
+  button,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Exibir o modal de impressão com 100% de largura */
+  #modal-impressao-orcamento {
+    position: static !important;
+    inset: auto !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    display: block !important;
+    width: 100% !important;
+  }
+
+  #modal-impressao-orcamento > div {
+    max-width: 100% !important;
+    width: 100% !important;
+    border: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  /* Evitar quebras de página no meio de seções críticas */
+  .print-avoid-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Quebra de página controlada (ex: para Anexo Fotográfico) */
+  .print-page-break {
+    page-break-before: always !important;
+    break-before: page !important;
+  }
+
+  /* Garantir que imagens e fotos não estourem a página */
+  img {
+    max-width: 100% !important;
+    page-break-inside: avoid !important;
+  }
+
+  table {
+    page-break-inside: auto !important;
+    width: 100% !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+}
+

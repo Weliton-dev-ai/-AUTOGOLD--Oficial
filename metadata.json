@@ -1,0 +1,6 @@
+{
+  "name": "AutoGold - Gestão de Funilaria e Pintura",
+  "description": "Sistema profissional para gestão de orçamentos de funilaria, pintura e polimento automotivo em 3 graus, com laudo fotográfico ilimitado de avarias, checklist de vistoria, cálculo fracionado de insumos e condição de sinal 50% Pix.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
