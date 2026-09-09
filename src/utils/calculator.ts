@@ -9,6 +9,7 @@ export interface CalculationParams {
   valorHoraPintura: number;
   custoPecaReposicao?: number;
   observacoes?: string;
+  margemLucroPercentual?: number;
 }
 
 export function getPaintTypeMultiplier(paintType: PaintType): { costMultiplier: number; label: string } {
@@ -46,7 +47,8 @@ export function getDamageLevelLabel(damage: DamageLevel): { label: string; desc:
 }
 
 /**
- * Calcula os custos fracionados exatos de materiais e mão de obra para um item
+ * Calcula os custos fracionados exatos de materiais e mão de obra para um item,
+ * aplicando a margem de lucro da oficina diretamente no preço da peça.
  */
 export function calculateQuoteItem(params: CalculationParams): QuoteItem {
   const {
@@ -58,6 +60,7 @@ export function calculateQuoteItem(params: CalculationParams): QuoteItem {
     valorHoraPintura,
     custoPecaReposicao = 0,
     observacoes = '',
+    margemLucroPercentual = 0,
   } = params;
 
   const paintInfo = getPaintTypeMultiplier(paintType);
@@ -100,11 +103,15 @@ export function calculateQuoteItem(params: CalculationParams): QuoteItem {
     });
   });
 
-  const valorTotalItem =
+  const custoBaseItem =
     valorMaoDeObraFunilaria +
     valorMaoDeObraPintura +
     valorInsumosFracionados +
     custoPecaReposicao;
+
+  // Margem de lucro da oficina calculada diretamente em cima da peça
+  const valorLucroItem = Math.round(custoBaseItem * (margemLucroPercentual / 100) * 100) / 100;
+  const valorTotalItem = Math.round((custoBaseItem + valorLucroItem) * 100) / 100;
 
   return {
     id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
@@ -116,13 +123,54 @@ export function calculateQuoteItem(params: CalculationParams): QuoteItem {
     valorMaoDeObraPintura: Math.round(valorMaoDeObraPintura * 100) / 100,
     valorInsumosFracionados: Math.round(valorInsumosFracionados * 100) / 100,
     custoPecaReposicao: Math.round(custoPecaReposicao * 100) / 100,
-    valorTotalItem: Math.round(valorTotalItem * 100) / 100,
+    custoBaseItem: Math.round(custoBaseItem * 100) / 100,
+    margemLucroItem: margemLucroPercentual,
+    valorLucroItem,
+    valorTotalItem,
     detalhesInsumos,
   };
 }
 
 /**
- * Calcula o consolidado geral do orçamento com margem de lucro e condição de 50% de sinal
+ * Recalcula a margem de lucro de uma lista de itens em cima de cada peça,
+ * garantindo que a somatória das peças coincida perfeitamente com o total final.
+ */
+export function recalculateQuoteItemsWithMargin(
+  itens: QuoteItem[],
+  novaMargemLucro: number
+): QuoteItem[] {
+  return itens.map((item) => {
+    // Serviços de polimento tabelado ou estética já têm preço fechado de venda
+    const isPolishing = item.pecaId.startsWith('polimento_') || item.pecaId.startsWith('addon_');
+    if (isPolishing) {
+      return item;
+    }
+
+    const custoBase = item.custoBaseItem !== undefined
+      ? item.custoBaseItem
+      : (
+          item.valorMaoDeObraFunilaria +
+          item.valorMaoDeObraPintura +
+          item.valorInsumosFracionados +
+          item.custoPecaReposicao
+        );
+
+    const valorLucroItem = Math.round(custoBase * (novaMargemLucro / 100) * 100) / 100;
+    const valorTotalItem = Math.round((custoBase + valorLucroItem) * 100) / 100;
+
+    return {
+      ...item,
+      custoBaseItem: Math.round(custoBase * 100) / 100,
+      margemLucroItem: novaMargemLucro,
+      valorLucroItem,
+      valorTotalItem,
+    };
+  });
+}
+
+/**
+ * Calcula o consolidado geral do orçamento com base na somatória exata das peças já precificadas,
+ * garantindo que a soma dos itens no PDF e no WhatsApp coincida perfeitamente com o total geral.
  */
 export function calculateQuoteTotals(
   itens: QuoteItem[],
@@ -132,17 +180,28 @@ export function calculateQuoteTotals(
   let subtotalMaoDeObra = 0;
   let subtotalInsumosFracionados = 0;
   let subtotalPecasReposicao = 0;
+  let subtotalServicos = 0;
+  let valorLucroTotal = 0;
 
   itens.forEach((item) => {
     subtotalMaoDeObra += item.valorMaoDeObraFunilaria + item.valorMaoDeObraPintura;
     subtotalInsumosFracionados += item.valorInsumosFracionados;
     subtotalPecasReposicao += item.custoPecaReposicao;
+    subtotalServicos += item.valorTotalItem;
+    if (item.valorLucroItem !== undefined) {
+      valorLucroTotal += item.valorLucroItem;
+    }
   });
 
   const baseCustoDireto = subtotalMaoDeObra + subtotalInsumosFracionados + subtotalPecasReposicao;
-  const valorLucro = baseCustoDireto * (margemLucroPercentual / 100);
-  const valorSemDesconto = baseCustoDireto + valorLucro;
-  const valorTotal = Math.max(0, valorSemDesconto - desconto);
+  
+  // Se o item não tiver lucro explicitado individualmente (ex: legado ou serviço estético)
+  const valorLucro = valorLucroTotal > 0
+    ? valorLucroTotal
+    : Math.max(0, subtotalServicos - baseCustoDireto);
+
+  const valorSemDesconto = Math.round(subtotalServicos * 100) / 100;
+  const valorTotal = Math.max(0, Math.round((valorSemDesconto - desconto) * 100) / 100);
 
   const valorSinal50 = Math.round((valorTotal / 2) * 100) / 100;
   const valorRestante50 = Math.round((valorTotal - valorSinal50) * 100) / 100;
@@ -153,8 +212,9 @@ export function calculateQuoteTotals(
     subtotalPecasReposicao: Math.round(subtotalPecasReposicao * 100) / 100,
     baseCustoDireto: Math.round(baseCustoDireto * 100) / 100,
     valorLucro: Math.round(valorLucro * 100) / 100,
+    subtotalServicos: valorSemDesconto,
     desconto: Math.round(desconto * 100) / 100,
-    valorTotal: Math.round(valorTotal * 100) / 100,
+    valorTotal,
     valorSinal50,
     valorRestante50,
   };

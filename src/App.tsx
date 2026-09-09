@@ -76,8 +76,8 @@ export default function App() {
   };
 
   // Handle Save / Update Quote
-  const handleSaveQuote = (quote: Quote) => {
-    if (!currentUser) return;
+  const handleSaveQuote = (quote: Quote, navigateToList: boolean = false) => {
+    const userEmail = currentUser?.email || 'admin@autogold.com.br';
     
     const existingIndex = quotes.findIndex((q) => q.id === quote.id);
     let updatedQuotes: Quote[];
@@ -90,8 +90,12 @@ export default function App() {
     }
 
     setQuotes(updatedQuotes);
-    saveUserQuotes(currentUser.email, updatedQuotes);
+    saveUserQuotes(userEmail, updatedQuotes);
     setEditingQuote(null);
+
+    if (navigateToList) {
+      setActiveTab('orcamentos_salvos');
+    }
   };
 
   // Handle Edit Quote
@@ -173,6 +177,7 @@ export default function App() {
                 onOpenPrintModal={(quote) => setPrintingQuote(quote)}
                 editingQuote={editingQuote}
                 onCancelEdit={() => setEditingQuote(null)}
+                onNavigateToList={() => setActiveTab('orcamentos_salvos')}
               />
             )}
 

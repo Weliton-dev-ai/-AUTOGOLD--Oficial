@@ -43,7 +43,8 @@ import {
   calculateQuoteTotals, 
   formatCurrencyBRL, 
   getDamageLevelLabel, 
-  getPaintTypeMultiplier 
+  getPaintTypeMultiplier,
+  recalculateQuoteItemsWithMargin
 } from '../utils/calculator';
 import { DEFAULT_BODY_PARTS } from '../data/defaultData';
 import { POLISHING_PACKAGES, POLISHING_ADDONS } from '../data/polishingData';
@@ -57,6 +58,7 @@ interface QuoteBuilderProps {
   onOpenPrintModal: (quote: Quote) => void;
   editingQuote?: Quote | null;
   onCancelEdit?: () => void;
+  onNavigateToList?: () => void;
 }
 
 export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
@@ -66,6 +68,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
   onOpenPrintModal,
   editingQuote,
   onCancelEdit,
+  onNavigateToList,
 }) => {
   // Client Info State
   const [cliente, setCliente] = useState<ClientInfo>(
@@ -90,8 +93,24 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
     }
   );
 
-  // Items State
-  const [itens, setItens] = useState<QuoteItem[]>(editingQuote?.itens || []);
+  // Financial settings for this quote
+  const [margemLucro, setMargemLucro] = useState<number>(
+    editingQuote?.margemLucroAplicada ?? workshop.margemLucroPadrao
+  );
+
+  // Items State (garante itens recalculados com margem de lucro por peça)
+  const [itens, setItens] = useState<QuoteItem[]>(() => {
+    if (!editingQuote?.itens) return [];
+    const margem = editingQuote.margemLucroAplicada ?? workshop.margemLucroPadrao;
+    return recalculateQuoteItemsWithMargin(editingQuote.itens, margem);
+  });
+
+  // Atualiza margem e recalcula instantaneamente o preço de venda de cada peça
+  const handleMargemLucroChange = (newMargin: number) => {
+    const val = isNaN(newMargin) ? 0 : Math.max(0, newMargin);
+    setMargemLucro(val);
+    setItens((prev) => recalculateQuoteItemsWithMargin(prev, val));
+  };
 
   // Photos of damages and inspection checklist
   const [fotosAvarias, setFotosAvarias] = useState<DamagePhoto[]>(editingQuote?.fotosAvarias || []);
@@ -121,10 +140,6 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
   );
   const [selectedAddonIds, setSelectedAddonIds] = useState<string[]>([]);
 
-  // Financial settings for this quote
-  const [margemLucro, setMargemLucro] = useState<number>(
-    editingQuote?.margemLucroAplicada ?? workshop.margemLucroPadrao
-  );
   const [desconto, setDesconto] = useState<number>(editingQuote?.desconto || 0);
   const [prazoDias, setPrazoDias] = useState<number>(editingQuote?.prazoExecucaoDias || 3);
   const [obsGerais, setObsGerais] = useState<string>(
@@ -139,7 +154,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
   // Calculate live quote totals
   const totals = calculateQuoteTotals(itens, margemLucro, desconto);
 
-  // Quick helper to add item
+  // Quick helper to add item (já com a margem de lucro embutida no valor da peça)
   const handleAddItem = () => {
     setErrorMsg('');
     const bodyPart = DEFAULT_BODY_PARTS.find((p) => p.id === selectedPartId);
@@ -154,6 +169,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
       valorHoraPintura: workshop.valorHoraPintura,
       custoPecaReposicao: Number(customPartCost) || 0,
       observacoes: itemObs.trim(),
+      margemLucroPercentual: margemLucro,
     });
 
     setItens([...itens, newItem]);
@@ -203,6 +219,9 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
       valorMaoDeObraPintura: valorMaoDeObra,
       valorInsumosFracionados: custoInsumos,
       custoPecaReposicao: 0,
+      custoBaseItem: precoBase,
+      margemLucroItem: 0,
+      valorLucroItem: 0,
       valorTotalItem: precoBase,
       detalhesInsumos: pkg.insumosUtilizados.map((ins) => ({
         materialNome: ins.nome,
@@ -225,6 +244,9 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
         valorMaoDeObraPintura: Math.round(addon.precoPadrao * 0.7),
         valorInsumosFracionados: Math.round(addon.precoPadrao * 0.3),
         custoPecaReposicao: 0,
+        custoBaseItem: addon.precoPadrao,
+        margemLucroItem: 0,
+        valorLucroItem: 0,
         valorTotalItem: addon.precoPadrao,
         detalhesInsumos: [],
       };
@@ -249,17 +271,24 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
 
   const buildQuoteObject = (): Quote | null => {
     if (!cliente.nome.trim()) {
-      setErrorMsg('Informe o nome do cliente para gerar o orçamento.');
-      return null;
-    }
-    if (!veiculo.placa.trim()) {
-      setErrorMsg('Informe a placa do veículo.');
+      setErrorMsg('Informe o nome do cliente para gerar ou salvar o orçamento.');
+      const el = document.getElementById('input-cliente-nome');
+      if (el) {
+        el.focus();
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       return null;
     }
     if (itens.length === 0) {
-      setErrorMsg('Adicione pelo menos 1 serviço ou peça ao orçamento.');
+      setErrorMsg('Adicione pelo menos 1 serviço ou peça ao orçamento antes de salvar ou gerar o PDF.');
       return null;
     }
+
+    const placaFinal = veiculo.placa.trim() ? veiculo.placa.trim().toUpperCase() : 'A DEFINIR';
+    const finalVeiculo = {
+      ...veiculo,
+      placa: placaFinal,
+    };
 
     const hasPolishing = itens.some((it) => it.pecaId.startsWith('polimento_') || it.pecaId.startsWith('addon_'));
     const hasFunilaria = itens.some((it) => !it.pecaId.startsWith('polimento_') && !it.pecaId.startsWith('addon_'));
@@ -277,7 +306,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
       dataValidade,
       status: editingQuote?.status || 'pendente',
       cliente,
-      veiculo,
+      veiculo: finalVeiculo,
       itens,
       fotosAvarias,
       tipoOrcamento,
@@ -298,20 +327,36 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
   };
 
   const handleSave = () => {
+    setErrorMsg('');
     const quote = buildQuoteObject();
     if (!quote) return;
 
     onSaveQuote(quote);
     setSavedFeedback(true);
-    setTimeout(() => setSavedFeedback(false), 3000);
+    setTimeout(() => setSavedFeedback(false), 5000);
+  };
+
+  const handleOpenPdfAndWhatsApp = () => {
+    setErrorMsg('');
+    const quote = buildQuoteObject();
+    if (!quote) return;
+
+    onSaveQuote(quote);
+    onOpenPrintModal(quote);
   };
 
   const handleSendWhatsApp = () => {
+    setErrorMsg('');
     const quote = buildQuoteObject();
     if (!quote) return;
 
     if (!cliente.telefone) {
       setErrorMsg('Informe o número de WhatsApp do cliente com DDD.');
+      const el = document.getElementById('input-cliente-telefone');
+      if (el) {
+        el.focus();
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       return;
     }
 
@@ -321,6 +366,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
   };
 
   const handlePrint = () => {
+    setErrorMsg('');
     const quote = buildQuoteObject();
     if (!quote) return;
 
@@ -1025,17 +1071,30 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
               )}
 
               <div className="pt-2 border-t border-[#1E3349] flex justify-between text-slate-300 font-medium">
-                <span>Custo Direto do Serviço:</span>
+                <span>Custo Direto Base (MDO + Insumos):</span>
                 <span>{formatCurrencyBRL(totals.baseCustoDireto)}</span>
+              </div>
+
+              <div className="flex justify-between text-blue-400 font-semibold pt-1">
+                <span>Lucro da Oficina ({margemLucro}% embutido nas peças):</span>
+                <span>+{formatCurrencyBRL(totals.valorLucro)}</span>
+              </div>
+
+              <div className="flex justify-between text-slate-100 font-bold pt-1.5 border-t border-[#1E3349]">
+                <span>Subtotal Serviços (Somatória das Peças):</span>
+                <span>{formatCurrencyBRL(totals.subtotalServicos)}</span>
               </div>
             </div>
 
             {/* Profit Margin & Discount Controls */}
             <div className="p-3.5 rounded-xl bg-[#0A0A0C] border border-[#1E3349] space-y-3">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-slate-300 flex items-center gap-1">
-                  <Percent className="w-3.5 h-3.5 text-blue-400" /> Margem de Lucro da Oficina:
-                </label>
+                <div>
+                  <label className="text-xs font-semibold text-slate-300 flex items-center gap-1">
+                    <Percent className="w-3.5 h-3.5 text-blue-400" /> Margem de Lucro da Oficina:
+                  </label>
+                  <p className="text-[10px] text-slate-500">Calculada diretamente no orçamento das peças</p>
+                </div>
                 <div className="flex items-center gap-1 w-24">
                   <input
                     id="input-margem-lucro"
@@ -1043,7 +1102,7 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
                     min="0"
                     max="100"
                     value={margemLucro}
-                    onChange={(e) => setMargemLucro(Number(e.target.value))}
+                    onChange={(e) => handleMargemLucroChange(Number(e.target.value))}
                     className="w-full px-2 py-1 bg-[#121E2B] border border-[#223952] rounded-lg text-slate-100 text-right font-bold text-xs focus:outline-none focus:border-[#0066FF]"
                   />
                   <span className="text-xs text-slate-400 font-bold">%</span>
@@ -1144,20 +1203,55 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
               </div>
             </div>
 
+            {/* Inline Error and Success Feedbacks right above action buttons */}
+            {errorMsg && (
+              <div className="p-3.5 rounded-xl bg-red-950/90 border border-red-700 text-red-200 text-xs font-semibold flex items-center justify-between animate-in fade-in">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                  <span>{errorMsg}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setErrorMsg('')}
+                  className="text-red-400 hover:text-white text-[11px] font-bold px-1.5 py-0.5 rounded cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
+            {savedFeedback && (
+              <div className="p-3.5 rounded-xl bg-emerald-950/90 border border-emerald-500 text-emerald-200 text-xs font-semibold flex items-center justify-between gap-2 animate-in fade-in">
+                <div className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>Orçamento salvo com sucesso no sistema!</span>
+                </div>
+                {onNavigateToList && (
+                  <button
+                    type="button"
+                    onClick={onNavigateToList}
+                    className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-[11px] cursor-pointer shadow"
+                  >
+                    Ver Salvos
+                  </button>
+                )}
+              </div>
+            )}
+
             {/* Primary Action Buttons */}
             <div className="space-y-2.5 pt-2">
-              {/* WhatsApp Direct Send */}
+              {/* Opção Principal: Gerar e Enviar PDF no WhatsApp */}
               <button
-                id="btn-enviar-whatsapp"
+                id="btn-gerar-enviar-pdf-whatsapp"
                 type="button"
-                onClick={handleSendWhatsApp}
+                onClick={handleOpenPdfAndWhatsApp}
                 className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-700/30 transition-all flex items-center justify-center gap-2 text-sm cursor-pointer active:scale-[0.99]"
               >
                 <Send className="w-4 h-4" />
-                <span>Enviar Orçamento no WhatsApp</span>
+                <span>Gerar / Enviar PDF no WhatsApp</span>
               </button>
 
-              {/* View / Print PDF Modal */}
+              {/* Visualizar / Baixar PDF Timbrado */}
               <button
                 id="btn-imprimir-pdf"
                 type="button"
@@ -1165,26 +1259,26 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
                 className="w-full py-3 px-4 bg-gradient-to-r from-[#0066FF] to-[#004DB3] hover:from-[#1A73E8] hover:to-[#0066FF] text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
               >
                 <Printer className="w-4 h-4" />
-                <span>Visualizar / Imprimir Orçamento Timbrado</span>
+                <span>Visualizar / Baixar Arquivo PDF</span>
               </button>
 
-              {/* Save Quote */}
+              {/* Botões de Salvar e Limpar */}
               <div className="grid grid-cols-2 gap-2 pt-1">
                 <button
                   id="btn-salvar-orcamento"
                   type="button"
                   onClick={handleSave}
-                  className="py-2.5 px-3 bg-[#0A0A0C] hover:bg-[#162536] text-blue-300 hover:text-white border border-[#223952] rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  className="py-3 px-3 bg-[#122131] hover:bg-[#1a2f45] text-blue-300 hover:text-white border border-[#234567] rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow"
                 >
                   <Save className="w-3.5 h-3.5" />
-                  <span>Salvar Registro</span>
+                  <span>Salvar Orçamento</span>
                 </button>
 
                 <button
                   id="btn-limpar-campos"
                   type="button"
                   onClick={editingQuote ? onCancelEdit : handleReset}
-                  className="py-2.5 px-3 bg-[#0A0A0C] hover:bg-red-950/40 text-slate-400 hover:text-red-400 border border-[#223952] rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  className="py-3 px-3 bg-[#0A0A0C] hover:bg-red-950/40 text-slate-400 hover:text-red-400 border border-[#223952] rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>{editingQuote ? 'Cancelar Edição' : 'Limpar Tudo'}</span>

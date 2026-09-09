@@ -3,7 +3,7 @@
  * Garante que fotos em alta resolução da câmera do celular/computador
  * sejam otimizadas para caber no armazenamento local e renderizar com perfeição no PDF
  */
-export async function compressImage(file: File, maxWidth = 1280, quality = 0.78): Promise<string> {
+export async function compressImage(file: File, maxWidth = 1920, quality = 0.92): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -29,12 +29,16 @@ export async function compressImage(file: File, maxWidth = 1280, quality = 0.78)
           return;
         }
 
-        // Desenhar no canvas
+        // Configurar interpolação de alta qualidade para fotos nítidas
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+
+        // Fundo branco puro sem bordas cinzas
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, width, height);
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Obter dataURL em formato JPEG comprimido
+        // Obter dataURL em formato JPEG com alta fidelidade (92% de qualidade)
         const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
         resolve(compressedDataUrl);
       };

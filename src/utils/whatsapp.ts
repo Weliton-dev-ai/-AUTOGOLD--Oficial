@@ -2,23 +2,37 @@ import { Quote, WorkshopProfile } from '../types';
 import { formatCurrencyBRL, getDamageLevelLabel } from './calculator';
 
 export function generateWhatsAppMessage(quote: Quote, workshop: WorkshopProfile): string {
-  let itensTexto = '';
-  quote.itens.forEach((item, index) => {
-    const isPolishing = item.pecaId.startsWith('polimento_') || item.pecaId.startsWith('addon_');
-    const avariaInfo = getDamageLevelLabel(item.avaria);
+  // Garante que o preço de cada peça na lista some exatamente o total de serviços,
+  // com a margem de lucro da oficina já embutida de forma imperceptível para o cliente
+  const somaItens = quote.itens.reduce((acc, it) => acc + (it.valorTotalItem || 0), 0);
+  const subtotalEsperado = (quote.subtotalMaoDeObra || 0) + 
+    (quote.subtotalInsumosFracionados || 0) + 
+    (quote.subtotalPecasReposicao || 0) + 
+    (quote.valorLucro || 0);
 
-    itensTexto += `\n*${index + 1}. ${item.nomePeca}*\n`;
+  const fator = (somaItens > 0 && Math.abs(somaItens - subtotalEsperado) > 0.05 && subtotalEsperado > somaItens)
+    ? subtotalEsperado / somaItens
+    : 1;
+
+  let itensTexto = '';
+  let totalPecasCalculado = 0;
+
+  quote.itens.forEach((item) => {
+    const isPolishing = item.pecaId.startsWith('polimento_') || item.pecaId.startsWith('addon_');
+    const precoItem = Math.round((item.valorTotalItem * fator) * 100) / 100;
+    totalPecasCalculado += precoItem;
+
     if (isPolishing) {
-      itensTexto += `   ✨ *Informação do Polimento:* ${item.observacoes || 'Polimento automotivo profissional'}\n`;
-      itensTexto += `   💵 *Valor do Serviço:* ${formatCurrencyBRL(item.valorTotalItem)}\n`;
+      itensTexto += `\n• *${item.nomePeca}* (Polimento): ${formatCurrencyBRL(precoItem)}`;
     } else {
-      itensTexto += `   🔨 *Mão de Obra:* Funilaria & Pintura (${avariaInfo.label})\n`;
-      if (item.observacoes) {
-        itensTexto += `   📝 *Detalhes:* ${item.observacoes}\n`;
-      }
-      itensTexto += `   💵 *Mão de Obra:* ${formatCurrencyBRL(item.valorTotalItem)}\n`;
+      itensTexto += `\n• *${item.nomePeca}* (Mão de Obra & Pintura): ${formatCurrencyBRL(precoItem)}`;
     }
   });
+
+  const totalServicos = Math.round(totalPecasCalculado * 100) / 100;
+  const valorTotalFinal = Math.max(0, Math.round((totalServicos - (quote.desconto || 0)) * 100) / 100);
+  const sinal50 = Math.round((valorTotalFinal / 2) * 100) / 100;
+  const restante50 = Math.round((valorTotalFinal - sinal50) * 100) / 100;
 
   const tipoTitulo = quote.tipoOrcamento === 'polimento_estetica'
     ? 'ORÇAMENTO DE POLIMENTO & ESTÉTICA'
@@ -41,12 +55,12 @@ export function generateWhatsAppMessage(quote: Quote, workshop: WorkshopProfile)
 🛠️ *DISCRIMINAÇÃO DOS SERVIÇOS:*${itensTexto}
 
 💰 *RESUMO FINANCEIRO:*
-• Total Mão de Obra & Serviços: ${formatCurrencyBRL(quote.subtotalMaoDeObra + quote.subtotalInsumosFracionados + quote.subtotalPecasReposicao + quote.valorLucro)}
-${quote.desconto > 0 ? `• Desconto Especial: -${formatCurrencyBRL(quote.desconto)}\n` : ''}• *VALOR TOTAL DO SERVIÇO: ${formatCurrencyBRL(quote.valorTotal)}*
+• Total Mão de Obra & Serviços: ${formatCurrencyBRL(totalServicos)}
+${quote.desconto > 0 ? `• Desconto Especial: -${formatCurrencyBRL(quote.desconto)}\n` : ''}• *VALOR TOTAL DO SERVIÇO: ${formatCurrencyBRL(valorTotalFinal)}*
 
 💳 *CONDIÇÕES DE PAGAMENTO (SINAL 50%):*
-• *Sinal de Entrada (50%):* ${formatCurrencyBRL(quote.valorSinal50)}
-• *Saldo Restante na Entrega:* ${formatCurrencyBRL(quote.valorRestante50)}
+• *Sinal de Entrada (50%):* ${formatCurrencyBRL(sinal50)}
+• *Saldo Restante na Entrega:* ${formatCurrencyBRL(restante50)}
 • *Prazo Estimado de Execução:* ${quote.prazoExecucaoDias} dias úteis
 
 🔑 *CHAVE PIX PARA O SINAL (50%):*

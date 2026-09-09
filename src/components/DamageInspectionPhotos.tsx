@@ -38,7 +38,7 @@ export const DamageInspectionPhotos: React.FC<DamageInspectionPhotosProps> = ({
       if (!file.type.startsWith('image/')) continue;
 
       try {
-        const compressedDataUrl = await compressImage(file, 1280, 0.78);
+        const compressedDataUrl = await compressImage(file, 1920, 0.92);
         const now = new Date();
         const dataHoraFormatada = `${now.toLocaleDateString('pt-BR')} às ${now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
 

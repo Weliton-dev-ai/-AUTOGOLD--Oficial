@@ -55,6 +55,9 @@ export interface QuoteItem {
   valorMaoDeObraPintura: number;
   valorInsumosFracionados: number;
   custoPecaReposicao: number;
+  custoBaseItem?: number;
+  margemLucroItem?: number;
+  valorLucroItem?: number;
   valorTotalItem: number;
   detalhesInsumos: {
     materialNome: string;
