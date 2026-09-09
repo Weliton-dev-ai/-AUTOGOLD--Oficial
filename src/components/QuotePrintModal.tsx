@@ -156,19 +156,28 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
   }, [quote.fotosAvarias]);
 
   return (
-    <div id="modal-impressao-orcamento" className="fixed inset-0 z-50 overflow-y-auto bg-[#0A0A0C]/90 backdrop-blur-md p-2 sm:p-6 flex justify-center items-start print:p-0 print:bg-white print:static print:inset-auto">
-      <div className="w-full max-w-4xl bg-white text-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-200 my-4 print:border-none print:shadow-none print:m-0 print:rounded-none print:w-full print:max-w-none">
+    <div id="modal-impressao-orcamento" className="fixed inset-0 z-50 overflow-y-auto bg-[#0A0A0C]/90 backdrop-blur-md p-1.5 sm:p-6 flex justify-center items-start print:p-0 print:bg-white print:static print:inset-auto">
+      <div className="w-full max-w-4xl bg-white text-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-200 my-2 sm:my-4 print:border-none print:shadow-none print:m-0 print:rounded-none print:w-full print:max-w-none">
         
         {/* Barra de Ações Superior (Oculta na Impressão) */}
-        <div className="p-4 bg-[#121E2B] border-b border-[#1E3349] text-white flex flex-wrap items-center justify-between gap-3 print:hidden">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-sm text-blue-400">Orçamento & PDF Oficial</span>
-            <span className="text-xs text-slate-400 font-mono font-bold">({quote.numero})</span>
+        <div className="p-3 sm:p-4 bg-[#121E2B] border-b border-[#1E3349] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 print:hidden">
+          <div className="flex items-center justify-between sm:justify-start gap-2">
+            <div className="flex items-center gap-1.5">
+              <span className="font-bold text-xs sm:text-sm text-blue-400">Orçamento Oficial</span>
+              <span className="text-xs text-slate-400 font-mono font-bold">({quote.numero})</span>
+            </div>
             {hasPhotos && (
               <span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
                 {quote.fotosAvarias?.length} fotos
               </span>
             )}
+            {/* Fechar botão no mobile no canto direito */}
+            <button
+              onClick={onClose}
+              className="sm:hidden p-1.5 rounded-xl bg-[#0A0A0C] hover:bg-red-950/60 text-slate-400 hover:text-red-400 border border-[#223952] transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -177,7 +186,7 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
               id="btn-enviar-pdf-whatsapp"
               onClick={handleSendWhatsAppWithPdf}
               disabled={isGeneratingPdf}
-              className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-emerald-700/30 cursor-pointer transition-all disabled:opacity-50"
+              className="flex-1 sm:flex-initial px-3 py-2 sm:py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-700/30 cursor-pointer transition-all disabled:opacity-50 min-h-[38px] sm:min-h-0"
               title="Gera o arquivo PDF e abre o WhatsApp do cliente para envio"
             >
               {isGeneratingPdf ? (
@@ -185,7 +194,7 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
               ) : (
                 <Send className="w-3.5 h-3.5" />
               )}
-              <span>Gerar / Enviar PDF no WhatsApp</span>
+              <span>Enviar PDF WhatsApp</span>
             </button>
 
             {/* Opção Baixar Arquivo PDF */}
@@ -193,7 +202,7 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
               id="btn-baixar-arquivo-pdf"
               onClick={handleDownloadPdf}
               disabled={isGeneratingPdf}
-              className="px-3.5 py-1.5 rounded-xl bg-[#0066FF] hover:bg-[#1A73E8] text-white font-bold text-xs flex items-center gap-1.5 shadow cursor-pointer transition-all disabled:opacity-50"
+              className="px-3 py-2 sm:py-1.5 rounded-xl bg-[#0066FF] hover:bg-[#1A73E8] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow cursor-pointer transition-all disabled:opacity-50 min-h-[38px] sm:min-h-0"
               title="Baixa o documento PDF timbrado diretamente no seu aparelho"
             >
               {isGeneratingPdf ? (
@@ -209,25 +218,26 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
               id="btn-imprimir-impressora"
               onClick={handlePrint}
               disabled={isGeneratingPdf}
-              className="px-3 py-1.5 rounded-xl bg-[#0A0A0C] hover:bg-[#162536] text-slate-300 font-semibold text-xs flex items-center gap-1.5 border border-[#223952] cursor-pointer transition-all"
+              className="px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-xl bg-[#0A0A0C] hover:bg-[#162536] text-slate-300 font-semibold text-xs flex items-center justify-center gap-1.5 border border-[#223952] cursor-pointer transition-all min-h-[38px] sm:min-h-0"
               title="Abre a caixa de impressão do navegador"
             >
               <Printer className="w-3.5 h-3.5" />
-              <span>Imprimir</span>
+              <span className="hidden sm:inline">Imprimir</span>
             </button>
 
             {/* Copiar Texto Formatado */}
             <button
               onClick={handleCopyFormattedText}
-              className="px-3 py-1.5 rounded-xl bg-[#0A0A0C] hover:bg-[#162536] text-slate-300 font-semibold text-xs flex items-center gap-1.5 border border-[#223952] cursor-pointer transition-all"
+              className="px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-xl bg-[#0A0A0C] hover:bg-[#162536] text-slate-300 font-semibold text-xs flex items-center justify-center gap-1.5 border border-[#223952] cursor-pointer transition-all min-h-[38px] sm:min-h-0"
+              title="Copiar resumo em texto"
             >
               {copiedText ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copiedText ? 'Copiado!' : 'Copiar Texto'}</span>
+              <span className="hidden sm:inline">{copiedText ? 'Copiado!' : 'Copiar Texto'}</span>
             </button>
 
             <button
               onClick={onClose}
-              className="p-1.5 rounded-xl bg-[#0A0A0C] hover:bg-red-950/60 text-slate-400 hover:text-red-400 border border-[#223952] transition-colors cursor-pointer ml-1"
+              className="hidden sm:flex p-1.5 rounded-xl bg-[#0A0A0C] hover:bg-red-950/60 text-slate-400 hover:text-red-400 border border-[#223952] transition-colors cursor-pointer ml-1"
             >
               <X className="w-4 h-4" />
             </button>
@@ -250,366 +260,545 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
         )}
 
         {/* Canvas de Documento Timbrado Imprimível (A4) com ID para html2canvas & jsPDF */}
-        <div id="printable-quote-content" className="text-slate-900 font-sans bg-white">
-          
+        <div
+          id="printable-quote-content"
+          className="text-slate-900 font-sans bg-white overflow-x-auto"
+          style={{
+            backgroundColor: '#ffffff',
+            color: '#0f172a',
+            fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+          }}
+        >
           {/* PÁGINA 1: ORÇAMENTO TIMBRADO OFICIAL */}
-          <div className="pdf-page p-6 sm:p-10 space-y-5 bg-white print:p-2">
-          
-          {/* Cabeçalho da Oficina com Logotipo & Dados Fiscais */}
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b-2 border-slate-900 pb-5 print-avoid-break">
-            <div className="flex items-center gap-4">
-              {workshop.logotipoUrl ? (
-                <img
-                  src={workshop.logotipoUrl}
-                  alt={workshop.nomeOficina}
-                  className="h-16 max-w-[180px] object-contain rounded"
-                  crossOrigin="anonymous"
-                />
-              ) : (
-                <div className="w-16 h-16 rounded-xl bg-slate-900 text-white flex flex-col items-center justify-center font-black">
-                  <span className="text-xs uppercase tracking-wider text-blue-400">AUTO</span>
-                  <span className="text-sm text-yellow-400">GOLD</span>
-                </div>
-              )}
-
-              <div>
-                <h1 className="text-xl font-black text-slate-900 tracking-tight">
-                  {workshop.nomeOficina}
-                </h1>
-                {workshop.razaoSocial && (
-                  <p className="text-xs text-slate-600 font-medium">{workshop.razaoSocial}</p>
-                )}
-                {workshop.cnpj && (
-                  <p className="text-xs text-slate-600">CNPJ: {workshop.cnpj}</p>
-                )}
-                <p className="text-xs text-slate-600">
-                  {workshop.endereco} - {workshop.cidadeUf}
-                </p>
-                <p className="text-xs font-bold text-slate-800">
-                  WhatsApp: {workshop.telefoneWhatsApp} {workshop.telefoneFixo ? `| Fixo: ${workshop.telefoneFixo}` : ''}
-                </p>
-              </div>
-            </div>
-
-            {/* Número e Validade do Orçamento */}
-            <div className="text-right bg-slate-100 p-3.5 rounded-xl border border-slate-300">
-              <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                {quote.tipoOrcamento === 'polimento_estetica' 
-                  ? 'Orçamento de Polimento & Estética' 
-                  : quote.tipoOrcamento === 'misto'
-                  ? 'Orçamento de Funilaria & Polimento'
-                  : 'Orçamento de Funilaria e Pintura'}
-              </span>
-              <span className="block text-lg font-black text-slate-900 font-mono">
-                {quote.numero}
-              </span>
-              <div className="mt-1.5 text-xs text-slate-600 space-y-0.5">
-                <p>
-                  <strong>Emissão:</strong> {new Date(quote.dataCriacao).toLocaleDateString('pt-BR')}
-                </p>
-                <p>
-                  <strong>Validade:</strong> {new Date(quote.dataValidade).toLocaleDateString('pt-BR')}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Dados do Cliente e Identificação do Veículo */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 print-avoid-break">
-            {/* Caixa Cliente */}
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-300 space-y-1 text-xs">
-              <span className="font-bold text-slate-900 text-xs uppercase tracking-wider block mb-1 border-b border-slate-200 pb-1">
-                Dados do Cliente
-              </span>
-              <p>
-                <strong className="text-slate-700">Nome:</strong>{' '}
-                <span className="font-bold text-slate-900 text-sm">{quote.cliente.nome}</span>
-              </p>
-              <p>
-                <strong className="text-slate-700">Telefone / WhatsApp:</strong> {quote.cliente.telefone || 'Não informado'}
-              </p>
-              {quote.cliente.documento && (
-                <p>
-                  <strong className="text-slate-700">CPF / CNPJ:</strong> {quote.cliente.documento}
-                </p>
-              )}
-            </div>
-
-            {/* Caixa Veículo */}
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-300 space-y-1 text-xs">
-              <span className="font-bold text-slate-900 text-xs uppercase tracking-wider block mb-1 border-b border-slate-200 pb-1">
-                Identificação do Veículo
-              </span>
-              <p>
-                <strong className="text-slate-700">Veículo / Marca:</strong>{' '}
-                <span className="font-bold text-slate-900 text-sm">
-                  {quote.veiculo.marca ? `${quote.veiculo.marca} ` : ''}{quote.veiculo.modelo || 'Veículo'}
-                </span>
-              </p>
-              <p>
-                <strong className="text-slate-700">Placa:</strong>{' '}
-                <span className="font-mono font-bold px-2 py-0.5 bg-slate-200 rounded text-slate-900 text-sm">
-                  {quote.veiculo.placa || 'A DEFINIR'}
-                </span>
-              </p>
-            </div>
-          </div>
-
-          {/* Tabela de Serviços: APENAS MÃO DE OBRA E POLIMENTO COM PREÇO (SEM DETALHES DE EXECUÇÃO) */}
-          <div className="border border-slate-300 rounded-xl overflow-hidden print-avoid-break">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-900 text-white uppercase tracking-wider text-[10px]">
-                <tr>
-                  <th className="py-2.5 px-3 w-12 text-center">Item</th>
-                  <th className="py-2.5 px-3">Peça / Serviço</th>
-                  <th className="py-2.5 px-3 w-44">Discriminação</th>
-                  <th className="py-2.5 px-3 text-right w-36">Preço (R$)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {itensComMargemEmbutida.map((item, idx) => {
-                  const isPolishing = item.pecaId.startsWith('polimento_') || item.pecaId.startsWith('addon_');
-
-                  return (
-                    <tr key={item.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                      <td className="py-3 px-3 text-center font-bold text-slate-700">{idx + 1}</td>
-                      <td className="py-3 px-3">
-                        <span className="font-bold text-slate-900 block text-xs sm:text-[13px]">{item.nomePeca}</span>
-                      </td>
-                      <td className="py-3 px-3">
-                        {isPolishing ? (
-                          <span className="inline-block px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
-                            Polimento
-                          </span>
-                        ) : (
-                          <span className="inline-block px-2 py-0.5 rounded text-[11px] font-bold bg-blue-100 text-blue-900 border border-blue-300">
-                            Mão de Obra & Pintura
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-3 text-right font-black text-slate-900 text-sm">
-                        {formatCurrencyBRL(item.valorTotalItem)}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Resumo Financeiro com Caixa de Sinal de 50% e QR Code Pix Real */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start print-avoid-break">
-            
-            {/* Esquerda: Caixa de Entrada 50% via Pix (7 colunas) */}
-            <div className="md:col-span-7 bg-slate-900 text-white p-4 sm:p-5 rounded-2xl space-y-3 print:bg-slate-900 print:text-white">
-              <div className="flex items-center justify-between border-b border-slate-700 pb-2">
-                <span className="font-bold text-xs uppercase tracking-wider text-yellow-400 flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-yellow-400" />
-                  Condição de Entrada: Sinal de 50% via Pix
-                </span>
-                <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300">
-                  Reserva & Agendamento
-                </span>
-              </div>
-
-              {/* Valores Divididos (50% Entrada e 50% Entrega) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="bg-emerald-950 p-3 rounded-xl border border-emerald-500/40">
-                  <span className="block text-[10px] uppercase font-bold text-emerald-300">
-                    Sinal de Entrada (50%):
-                  </span>
-                  <span className="text-xl font-black text-emerald-400">
-                    {formatCurrencyBRL(sinal50Final)}
-                  </span>
-                </div>
-
-                <div className="bg-slate-800/80 p-3 rounded-xl border border-slate-700">
-                  <span className="block text-[10px] uppercase font-bold text-slate-400">
-                    Saldo Restante na Entrega (50%):
-                  </span>
-                  <span className="text-xl font-bold text-slate-200">
-                    {formatCurrencyBRL(restante50Final)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Dados do Pix em Destaque: Chave e Favorecido */}
-              <div className="bg-slate-800/90 p-3.5 rounded-xl border border-slate-700 space-y-2">
-                <div className="flex flex-wrap items-center justify-between gap-1.5">
-                  <span className="text-slate-300 text-xs font-semibold">
-                    Chave Pix ({workshop.tipoChavePix}):
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-mono text-yellow-400 font-bold select-all text-sm tracking-wide bg-slate-900/80 px-2.5 py-1 rounded-lg border border-yellow-500/20">
-                      {workshop.chavePix}
-                    </span>
-                    <button
-                      onClick={handleCopyPix}
-                      type="button"
-                      className="print:hidden p-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 transition-colors cursor-pointer"
-                      title="Copiar Chave Pix"
-                    >
-                      {copiedKey ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                    </button>
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center justify-between gap-1 text-xs pt-2 border-t border-slate-700/60">
-                  <span className="text-slate-400">Favorecido / Titular:</span>
-                  <span className="text-slate-100 font-semibold">{workshop.titularPix}</span>
-                </div>
-              </div>
-
-              <p className="text-[10px] text-slate-400 leading-tight">
-                * O início da execução dos serviços e agendamento inicia-se após a confirmação do sinal de 50%.
-              </p>
-            </div>
-
-            {/* Direita: Totalizador (5 colunas) */}
-            <div className="md:col-span-5 bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-300 space-y-2 text-xs">
-              <div className="flex justify-between text-slate-600">
-                <span>Total Mão de Obra & Serviços:</span>
-                <span className="font-semibold text-slate-900">
-                  {formatCurrencyBRL(totalServicosExibido)}
-                </span>
-              </div>
-
-              {quote.desconto > 0 && (
-                <div className="flex justify-between text-emerald-700 font-semibold">
-                  <span>Desconto Especial:</span>
-                  <span>-{formatCurrencyBRL(quote.desconto)}</span>
-                </div>
-              )}
-
-              <div className="pt-2 border-t-2 border-slate-900 flex justify-between items-baseline">
-                <span className="font-black text-slate-900 text-sm uppercase">VALOR TOTAL:</span>
-                <span className="text-2xl font-black text-slate-900">
-                  {formatCurrencyBRL(valorTotalFinal)}
-                </span>
-              </div>
-
-              <div className="pt-2 text-[11px] text-slate-600 space-y-1">
-                <p>
-                  <strong>Prazo de Execução:</strong> {quote.prazoExecucaoDias} dias úteis
-                </p>
-                <p>
-                  <strong>Garantia do Serviço:</strong> {workshop.textoGarantia}
-                </p>
-              </div>
-            </div>
-
-          </div>
-
-          {/* Observações Gerais e Assinaturas */}
-          <div className="pt-2 border-t border-slate-200 text-xs space-y-4 print-avoid-break">
-            {quote.observacoesGerais && (
-              <div>
-                <strong className="text-slate-800">Observações Gerais e Termos:</strong>
-                <p className="text-slate-600 mt-0.5">{quote.observacoesGerais}</p>
-              </div>
-            )}
-
-            {/* Linhas de Assinatura */}
-            <div className="grid grid-cols-2 gap-8 pt-6 text-center text-xs text-slate-700">
-              <div className="border-t border-slate-400 pt-2">
-                <p className="font-bold">{workshop.nomeOficina}</p>
-                <p className="text-[10px] text-slate-500">Responsável Técnico / Funilaria & Pintura</p>
-              </div>
-              <div className="border-t border-slate-400 pt-2">
-                <p className="font-bold">{quote.cliente.nome}</p>
-                <p className="text-[10px] text-slate-500">Aceite do Cliente e Aprovação do Orçamento</p>
-              </div>
-            </div>
-          </div>
-
-          {/* FIM DA PÁGINA 1 */}
-        </div>
-
-        {/* PÁGINAS DO LAUDO FOTOGRÁFICO DE REGISTRO DE AVARIAS (IMPRESSO COM O ORÇAMENTO) */}
-        {hasPhotos && photoPages.map((pagePhotos, pageIndex) => (
           <div
-            key={`photo-page-${pageIndex}`}
-            className="pdf-page p-6 sm:p-10 space-y-4 bg-white border-t-4 border-dashed border-slate-200 print:border-none print:p-2 print-page-break"
+            className="pdf-page p-3.5 sm:p-8 md:p-10 space-y-4 bg-white print:p-2"
+            style={{ backgroundColor: '#ffffff', color: '#0f172a' }}
           >
-            {/* Cabeçalho do Laudo Fotográfico */}
-            <div className="border-b-2 border-slate-900 pb-3 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5">
+            {/* Cabeçalho da Oficina com Logotipo & Dados Fiscais */}
+            <div
+              className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-4 print-avoid-break"
+              style={{ borderBottom: '2px solid #0f172a' }}
+            >
+              <div className="flex items-center gap-3 sm:gap-4">
                 {workshop.logotipoUrl ? (
                   <img
                     src={workshop.logotipoUrl}
                     alt={workshop.nomeOficina}
-                    className="h-10 max-w-[130px] object-contain rounded"
+                    className="h-14 sm:h-16 max-w-[150px] sm:max-w-[180px] object-contain rounded shrink-0"
                     crossOrigin="anonymous"
                   />
                 ) : (
-                  <div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center">
-                    <Camera className="w-4 h-4 text-blue-400" />
+                  <div
+                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl flex flex-col items-center justify-center font-black shadow-sm shrink-0"
+                    style={{ backgroundColor: '#0f172a', color: '#ffffff' }}
+                  >
+                    <span className="text-[10px] sm:text-[11px] uppercase tracking-wider" style={{ color: '#60a5fa' }}>AUTO</span>
+                    <span className="text-xs sm:text-sm" style={{ color: '#facc15' }}>GOLD</span>
                   </div>
                 )}
-                <div>
-                  <h2 className="text-sm font-black text-slate-900 uppercase tracking-wider">
-                    Laudo Fotográfico de Registro de Avarias & Vistoria
-                  </h2>
-                  <p className="text-[11px] text-slate-600">
-                    Anexo Oficial do Orçamento Nº <strong className="text-slate-900">{quote.numero}</strong> • Veículo:{' '}
-                    <strong className="text-slate-900">{quote.veiculo.marca} {quote.veiculo.modelo} ({quote.veiculo.placa})</strong>
+
+                <div className="min-w-0 flex-1">
+                  <h1 className="text-lg sm:text-xl font-black tracking-tight leading-tight" style={{ color: '#0f172a' }}>
+                    {workshop.nomeOficina}
+                  </h1>
+                  {workshop.razaoSocial && (
+                    <p className="text-xs font-medium truncate" style={{ color: '#475569' }}>{workshop.razaoSocial}</p>
+                  )}
+                  {workshop.cnpj && (
+                    <p className="text-xs" style={{ color: '#475569' }}>CNPJ: {workshop.cnpj}</p>
+                  )}
+                  <p className="text-xs" style={{ color: '#475569' }}>
+                    {workshop.endereco} - {workshop.cidadeUf}
+                  </p>
+                  <p className="text-xs font-bold" style={{ color: '#1e293b' }}>
+                    WhatsApp: {workshop.telefoneWhatsApp} {workshop.telefoneFixo ? `| Fixo: ${workshop.telefoneFixo}` : ''}
                   </p>
                 </div>
               </div>
 
-              <div className="text-right text-[11px] text-slate-500 font-semibold">
-                <span className="bg-slate-100 px-2 py-0.5 rounded border border-slate-300 font-mono text-xs">
-                  Página {pageIndex + 2} de {photoPages.length + 1}
+              {/* Número e Validade do Orçamento */}
+              <div
+                className="w-full sm:w-auto text-left sm:text-right p-3 sm:p-3.5 rounded-xl shrink-0"
+                style={{ backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1' }}
+              >
+                <span className="block text-[10px] font-bold uppercase tracking-wider" style={{ color: '#64748b' }}>
+                  {quote.tipoOrcamento === 'polimento_estetica'
+                    ? 'Orçamento de Polimento & Estética'
+                    : quote.tipoOrcamento === 'misto'
+                    ? 'Orçamento de Funilaria & Polimento'
+                    : 'Orçamento de Funilaria e Pintura'}
                 </span>
-                <p className="text-[10px] text-slate-500 mt-0.5">
-                  Fotos {pageIndex * 4 + 1} a {Math.min((pageIndex + 1) * 4, quote.fotosAvarias!.length)} de {quote.fotosAvarias!.length}
+                <span className="block text-base sm:text-lg font-black font-mono" style={{ color: '#0f172a' }}>
+                  {quote.numero}
+                </span>
+                <div className="mt-1 sm:mt-1.5 text-xs space-y-0.5" style={{ color: '#475569' }}>
+                  <p>
+                    <strong>Emissão:</strong> {new Date(quote.dataCriacao).toLocaleDateString('pt-BR')}
+                  </p>
+                  <p>
+                    <strong>Validade:</strong> {new Date(quote.dataValidade).toLocaleDateString('pt-BR')}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Dados do Cliente e Identificação do Veículo (Responsivo 1 ou 2 Colunas) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 print-avoid-break">
+              {/* Caixa Cliente */}
+              <div
+                className="p-3 sm:p-3.5 rounded-xl space-y-1 text-xs"
+                style={{ backgroundColor: '#f8fafc', border: '1px solid #cbd5e1' }}
+              >
+                <span
+                  className="font-bold text-xs uppercase tracking-wider block mb-1 pb-1"
+                  style={{ color: '#0f172a', borderBottom: '1px solid #e2e8f0' }}
+                >
+                  Dados do Cliente
+                </span>
+                <p>
+                  <strong style={{ color: '#334155' }}>Nome:</strong>{' '}
+                  <span className="font-bold text-sm" style={{ color: '#0f172a' }}>{quote.cliente.nome}</span>
+                </p>
+                <p>
+                  <strong style={{ color: '#334155' }}>Telefone / WhatsApp:</strong>{' '}
+                  <span style={{ color: '#1e293b' }}>{quote.cliente.telefone || 'Não informado'}</span>
+                </p>
+                {quote.cliente.documento && (
+                  <p>
+                    <strong style={{ color: '#334155' }}>CPF / CNPJ:</strong>{' '}
+                    <span style={{ color: '#1e293b' }}>{quote.cliente.documento}</span>
+                  </p>
+                )}
+              </div>
+
+              {/* Caixa Veículo */}
+              <div
+                className="p-3 sm:p-3.5 rounded-xl space-y-1 text-xs"
+                style={{ backgroundColor: '#f8fafc', border: '1px solid #cbd5e1' }}
+              >
+                <span
+                  className="font-bold text-xs uppercase tracking-wider block mb-1 pb-1"
+                  style={{ color: '#0f172a', borderBottom: '1px solid #e2e8f0' }}
+                >
+                  Identificação do Veículo
+                </span>
+                <p>
+                  <strong style={{ color: '#334155' }}>Veículo / Modelo:</strong>{' '}
+                  <span className="font-bold text-sm" style={{ color: '#0f172a' }}>
+                    {quote.veiculo.marca ? `${quote.veiculo.marca} ` : ''}{quote.veiculo.modelo || 'Veículo'}
+                  </span>
+                </p>
+                <p className="flex items-center gap-2 pt-0.5">
+                  <strong style={{ color: '#334155' }}>Placa Oficial:</strong>{' '}
+                  <span
+                    className="font-mono font-black px-2.5 py-0.5 rounded text-xs tracking-wider"
+                    style={{ backgroundColor: '#e2e8f0', color: '#0f172a', border: '1px solid #94a3b8' }}
+                  >
+                    {quote.veiculo.placa || 'A DEFINIR'}
+                  </span>
                 </p>
               </div>
             </div>
 
-            {/* Grade de Fotos do Laudo: 2 Colunas x até 2 Linhas por página para enquadramento perfeito */}
-            <div className="grid grid-cols-2 gap-4">
-              {pagePhotos.map((foto, index) => {
-                const globalIndex = pageIndex * 4 + index;
-                return (
-                  <div
-                    key={foto.id}
-                    className="border border-slate-300 rounded-xl overflow-hidden bg-white flex flex-col"
-                  >
-                    {/* Imagem em alta definição sem fundo cinza e com proporção estabilizada */}
-                    <div className="relative w-full h-48 sm:h-52 bg-white overflow-hidden flex items-center justify-center">
-                      <img
-                        src={foto.url}
-                        alt={foto.descricao}
-                        className="w-full h-full object-cover block"
-                        crossOrigin="anonymous"
-                      />
-                      <span className="absolute top-2 left-2 bg-slate-900/90 text-white font-mono font-bold text-[10px] px-2 py-0.5 rounded shadow">
-                        Registro #{globalIndex + 1}
-                      </span>
-                    </div>
+            {/* Tabela de Serviços: Mão de Obra e Polimento com Enquadramento Responsivo e Preço Claro */}
+            <div
+              className="rounded-xl overflow-hidden print-avoid-break shadow-sm w-full"
+              style={{ border: '1px solid #cbd5e1' }}
+            >
+              <table className="w-full text-left text-xs border-collapse table-auto sm:table-fixed">
+                <thead>
+                  <tr style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
+                    <th className="py-2.5 px-2 sm:px-3 w-9 sm:w-12 text-center text-[10px] uppercase font-bold tracking-wider">#</th>
+                    <th className="py-2.5 px-2.5 sm:px-3 text-[10px] uppercase font-bold tracking-wider">Peça / Serviço</th>
+                    <th className="hidden sm:table-cell py-2.5 px-3 w-40 text-[10px] uppercase font-bold tracking-wider">Discriminação</th>
+                    <th className="py-2.5 px-2.5 sm:px-4 text-right w-28 sm:w-36 text-[10px] uppercase font-bold tracking-wider whitespace-nowrap">Preço (R$)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {itensComMargemEmbutida.map((item, idx) => {
+                    const isPolishing = item.pecaId.startsWith('polimento_') || item.pecaId.startsWith('addon_');
 
-                    {/* Descrição e Data */}
-                    <div className="p-2.5 space-y-1 bg-slate-50 border-t border-slate-200">
-                      <p className="font-bold text-slate-900 text-[11px] leading-tight line-clamp-2">
-                        {foto.descricao || `Avaria documentada #${globalIndex + 1}`}
-                      </p>
-                      <div className="flex items-center justify-between text-[9px] text-slate-500 pt-0.5">
-                        <span>Data do Registro: {foto.dataHora}</span>
-                        <span className="font-semibold text-blue-700">AutoGold Inspeção</span>
-                      </div>
+                    return (
+                      <tr
+                        key={item.id}
+                        style={{
+                          backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc',
+                          borderBottom: '1px solid #e2e8f0',
+                        }}
+                      >
+                        <td className="py-2.5 px-2 sm:px-3 text-center font-bold text-xs" style={{ color: '#475569' }}>
+                          {idx + 1}
+                        </td>
+                        <td className="py-2.5 px-2.5 sm:px-3">
+                          <span className="font-bold block text-xs sm:text-sm leading-snug break-words" style={{ color: '#0f172a' }}>
+                            {item.nomePeca}
+                          </span>
+                          {/* Tag de Discriminação no Mobile (abaixo do nome para não espremer colunas) */}
+                          <div className="sm:hidden mt-1">
+                            {isPolishing ? (
+                              <span
+                                className="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold"
+                                style={{
+                                  backgroundColor: '#fef3c7',
+                                  color: '#92400e',
+                                  border: '1px solid #fcd34d',
+                                }}
+                              >
+                                Polimento & Estética
+                              </span>
+                            ) : (
+                              <span
+                                className="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold"
+                                style={{
+                                  backgroundColor: '#dbeafe',
+                                  color: '#1e40af',
+                                  border: '1px solid #93c5fd',
+                                }}
+                              >
+                                Mão de Obra & Pintura
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="hidden sm:table-cell py-2.5 px-3">
+                          {isPolishing ? (
+                            <span
+                              className="inline-block px-2 py-0.5 rounded text-[10px] font-bold"
+                              style={{
+                                backgroundColor: '#fef3c7',
+                                color: '#92400e',
+                                border: '1px solid #fcd34d',
+                              }}
+                            >
+                              Polimento & Estética
+                            </span>
+                          ) : (
+                            <span
+                              className="inline-block px-2 py-0.5 rounded text-[10px] font-bold"
+                              style={{
+                                backgroundColor: '#dbeafe',
+                                color: '#1e40af',
+                                border: '1px solid #93c5fd',
+                              }}
+                            >
+                              Mão de Obra & Pintura
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-2.5 px-2.5 sm:px-4 text-right font-black text-xs sm:text-sm whitespace-nowrap tabular-nums" style={{ color: '#0f172a' }}>
+                          {formatCurrencyBRL(item.valorTotalItem)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Resumo Financeiro com Caixa de Sinal de 50% Pix e Totalizador (Responsivo Celular e Computador) */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4 items-start print-avoid-break">
+              {/* Esquerda: Caixa de Entrada 50% via Pix (7 colunas no desktop, 100% no mobile) */}
+              <div
+                className="col-span-1 md:col-span-7 p-3.5 sm:p-4 rounded-2xl space-y-3"
+                style={{
+                  backgroundColor: '#0f172a',
+                  color: '#ffffff',
+                  border: '1px solid #1e293b',
+                }}
+              >
+                <div
+                  className="flex flex-wrap items-center justify-between gap-1.5 pb-2"
+                  style={{ borderBottom: '1px solid #334155' }}
+                >
+                  <span
+                    className="font-bold text-xs uppercase tracking-wider flex items-center gap-1.5"
+                    style={{ color: '#facc15' }}
+                  >
+                    <ShieldCheck className="w-4 h-4 text-yellow-400 shrink-0" />
+                    Condição de Entrada: Sinal de 50% no Pix
+                  </span>
+                  <span
+                    className="text-[10px] px-2 py-0.5 rounded font-semibold"
+                    style={{ backgroundColor: '#1e293b', color: '#94a3b8' }}
+                  >
+                    Reserva & Início
+                  </span>
+                </div>
+
+                {/* Valores Divididos (50% Entrada e 50% Entrega) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+                  <div
+                    className="p-3 rounded-xl"
+                    style={{
+                      backgroundColor: '#022c22',
+                      border: '1px solid #059669',
+                    }}
+                  >
+                    <span
+                      className="block text-[10px] uppercase font-bold tracking-wider"
+                      style={{ color: '#6ee7b7' }}
+                    >
+                      Sinal de Entrada (50%):
+                    </span>
+                    <span
+                      className="text-lg sm:text-xl font-black block mt-0.5 tabular-nums"
+                      style={{ color: '#34d399' }}
+                    >
+                      {formatCurrencyBRL(sinal50Final)}
+                    </span>
+                  </div>
+
+                  <div
+                    className="p-3 rounded-xl"
+                    style={{
+                      backgroundColor: '#1e293b',
+                      border: '1px solid #334155',
+                    }}
+                  >
+                    <span
+                      className="block text-[10px] uppercase font-bold tracking-wider"
+                      style={{ color: '#94a3b8' }}
+                    >
+                      Saldo na Entrega (50%):
+                    </span>
+                    <span
+                      className="text-lg sm:text-xl font-bold block mt-0.5 tabular-nums"
+                      style={{ color: '#f8fafc' }}
+                    >
+                      {formatCurrencyBRL(restante50Final)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Dados do Pix em Destaque: Chave e Favorecido */}
+                <div
+                  className="p-3 rounded-xl space-y-2"
+                  style={{
+                    backgroundColor: '#020617',
+                    border: '1px solid #334155',
+                  }}
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                    <span className="text-xs font-semibold" style={{ color: '#cbd5e1' }}>
+                      Chave Pix ({workshop.tipoChavePix}):
+                    </span>
+                    <div className="flex items-center gap-1.5 overflow-hidden">
+                      <span
+                        className="font-mono font-bold select-all text-xs sm:text-sm tracking-wider px-2 sm:px-2.5 py-1 rounded-lg truncate"
+                        style={{
+                          backgroundColor: '#0f172a',
+                          color: '#facc15',
+                          border: '1px solid #854d0e',
+                        }}
+                      >
+                        {workshop.chavePix}
+                      </span>
+                      <button
+                        onClick={handleCopyPix}
+                        type="button"
+                        className="print:hidden p-1.5 rounded-lg text-slate-200 transition-colors cursor-pointer shrink-0"
+                        style={{ backgroundColor: '#334155' }}
+                        title="Copiar Chave Pix"
+                      >
+                        {copiedKey ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
                     </div>
                   </div>
-                );
-              })}
+                  <div
+                    className="flex flex-wrap items-center justify-between gap-1 text-xs pt-2"
+                    style={{ borderTop: '1px solid #1e293b' }}
+                  >
+                    <span style={{ color: '#94a3b8' }}>Favorecido / Titular:</span>
+                    <span className="font-semibold" style={{ color: '#f8fafc' }}>
+                      {workshop.titularPix}
+                    </span>
+                  </div>
+                </div>
+
+                <p className="text-[10px] leading-tight" style={{ color: '#94a3b8' }}>
+                  * O início da execução dos serviços e agendamento inicia-se após a confirmação do sinal de 50%.
+                </p>
+              </div>
+
+              {/* Direita: Totalizador (5 colunas no desktop, 100% no mobile) */}
+              <div
+                className="col-span-1 md:col-span-5 p-3.5 sm:p-4 rounded-2xl space-y-2.5 text-xs"
+                style={{
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #cbd5e1',
+                }}
+              >
+                <div className="flex justify-between" style={{ color: '#475569' }}>
+                  <span>Total Serviços & MDO:</span>
+                  <span className="font-bold tabular-nums" style={{ color: '#0f172a' }}>
+                    {formatCurrencyBRL(totalServicosExibido)}
+                  </span>
+                </div>
+
+                {quote.desconto > 0 && (
+                  <div className="flex justify-between font-bold" style={{ color: '#059669' }}>
+                    <span>Desconto Aplicado:</span>
+                    <span className="tabular-nums">-{formatCurrencyBRL(quote.desconto)}</span>
+                  </div>
+                )}
+
+                <div
+                  className="pt-2 flex justify-between items-baseline"
+                  style={{ borderTop: '2px solid #0f172a' }}
+                >
+                  <span className="font-black text-xs sm:text-sm uppercase" style={{ color: '#0f172a' }}>
+                    VALOR TOTAL:
+                  </span>
+                  <span className="text-xl sm:text-2xl font-black tabular-nums" style={{ color: '#0f172a' }}>
+                    {formatCurrencyBRL(valorTotalFinal)}
+                  </span>
+                </div>
+
+                <div className="pt-2 text-[11px] space-y-1" style={{ color: '#475569' }}>
+                  <p>
+                    <strong style={{ color: '#0f172a' }}>Prazo de Execução:</strong> {quote.prazoExecucaoDias} dias úteis
+                  </p>
+                  <p>
+                    <strong style={{ color: '#0f172a' }}>Garantia dos Serviços:</strong> {workshop.textoGarantia}
+                  </p>
+                </div>
+              </div>
             </div>
 
-            {/* Rodapé do Laudo */}
-            <div className="pt-3 border-t border-slate-200 flex justify-between items-center text-[10px] text-slate-500">
-              <span>Documento fotográfico autenticado pela oficina {workshop.nomeOficina}</span>
-              <span>{quote.numero}</span>
+            {/* Observações Gerais e Assinaturas */}
+            <div
+              className="pt-3 text-xs space-y-4 print-avoid-break"
+              style={{ borderTop: '1px solid #e2e8f0' }}
+            >
+              {quote.observacoesGerais && (
+                <div>
+                  <strong style={{ color: '#1e293b' }}>Observações Gerais e Termos:</strong>
+                  <p className="mt-0.5" style={{ color: '#475569' }}>{quote.observacoesGerais}</p>
+                </div>
+              )}
+
+              {/* Linhas de Assinatura */}
+              <div className="grid grid-cols-2 gap-8 pt-5 text-center text-xs" style={{ color: '#334155' }}>
+                <div className="pt-2" style={{ borderTop: '1px solid #94a3b8' }}>
+                  <p className="font-bold" style={{ color: '#0f172a' }}>{workshop.nomeOficina}</p>
+                  <p className="text-[10px]" style={{ color: '#64748b' }}>Responsável Técnico / Funilaria & Pintura</p>
+                </div>
+                <div className="pt-2" style={{ borderTop: '1px solid #94a3b8' }}>
+                  <p className="font-bold" style={{ color: '#0f172a' }}>{quote.cliente.nome}</p>
+                  <p className="text-[10px]" style={{ color: '#64748b' }}>Aceite do Cliente e Aprovação do Orçamento</p>
+                </div>
+              </div>
             </div>
+
+            {/* FIM DA PÁGINA 1 */}
           </div>
-        ))}
+
+          {/* PÁGINAS DO LAUDO FOTOGRÁFICO DE REGISTRO DE AVARIAS (IMPRESSO COM O ORÇAMENTO) */}
+          {hasPhotos && photoPages.map((pagePhotos, pageIndex) => (
+            <div
+              key={`photo-page-${pageIndex}`}
+              className="pdf-page p-6 sm:p-10 space-y-4 bg-white border-t-4 border-dashed border-slate-200 print:border-none print:p-2 print-page-break"
+              style={{ backgroundColor: '#ffffff', color: '#0f172a' }}
+            >
+              {/* Cabeçalho do Laudo Fotográfico */}
+              <div
+                className="pb-3 flex items-center justify-between gap-3"
+                style={{ borderBottom: '2px solid #0f172a' }}
+              >
+                <div className="flex items-center gap-2.5">
+                  {workshop.logotipoUrl ? (
+                    <img
+                      src={workshop.logotipoUrl}
+                      alt={workshop.nomeOficina}
+                      className="h-10 max-w-[130px] object-contain rounded"
+                      crossOrigin="anonymous"
+                    />
+                  ) : (
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center shadow-sm"
+                      style={{ backgroundColor: '#0f172a', color: '#ffffff' }}
+                    >
+                      <Camera className="w-4 h-4 text-blue-400" />
+                    </div>
+                  )}
+                  <div>
+                    <h2 className="text-sm font-black uppercase tracking-wider" style={{ color: '#0f172a' }}>
+                      Laudo Fotográfico de Registro de Avarias & Vistoria
+                    </h2>
+                    <p className="text-[11px]" style={{ color: '#475569' }}>
+                      Anexo Oficial do Orçamento Nº <strong style={{ color: '#0f172a' }}>{quote.numero}</strong> • Veículo:{' '}
+                      <strong style={{ color: '#0f172a' }}>{quote.veiculo.marca} {quote.veiculo.modelo} ({quote.veiculo.placa})</strong>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="text-right text-[11px] font-semibold" style={{ color: '#64748b' }}>
+                  <span
+                    className="px-2 py-0.5 rounded font-mono text-xs"
+                    style={{ backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1', color: '#0f172a' }}
+                  >
+                    Página {pageIndex + 2} de {photoPages.length + 1}
+                  </span>
+                  <p className="text-[10px] mt-0.5" style={{ color: '#64748b' }}>
+                    Fotos {pageIndex * 4 + 1} a {Math.min((pageIndex + 1) * 4, quote.fotosAvarias!.length)} de {quote.fotosAvarias!.length}
+                  </p>
+                </div>
+              </div>
+
+              {/* Grade de Fotos do Laudo: 2 Colunas x até 2 Linhas por página para enquadramento perfeito */}
+              <div className="grid grid-cols-2 gap-4">
+                {pagePhotos.map((foto, index) => {
+                  const globalIndex = pageIndex * 4 + index;
+                  return (
+                    <div
+                      key={foto.id}
+                      className="rounded-xl overflow-hidden flex flex-col shadow-sm"
+                      style={{ border: '1px solid #cbd5e1', backgroundColor: '#ffffff' }}
+                    >
+                      {/* Imagem com proporção estabilizada */}
+                      <div className="relative w-full h-48 sm:h-52 bg-white overflow-hidden flex items-center justify-center">
+                        <img
+                          src={foto.url}
+                          alt={foto.descricao}
+                          className="w-full h-full object-cover block"
+                          crossOrigin="anonymous"
+                        />
+                        <span
+                          className="absolute top-2 left-2 font-mono font-bold text-[10px] px-2 py-0.5 rounded shadow"
+                          style={{ backgroundColor: '#0f172a', color: '#ffffff' }}
+                        >
+                          Registro #{globalIndex + 1}
+                        </span>
+                      </div>
+
+                      {/* Descrição e Data */}
+                      <div
+                        className="p-2.5 space-y-1"
+                        style={{ backgroundColor: '#f8fafc', borderTop: '1px solid #e2e8f0' }}
+                      >
+                        <p className="font-bold text-[11px] leading-tight line-clamp-2" style={{ color: '#0f172a' }}>
+                          {foto.descricao || `Avaria documentada #${globalIndex + 1}`}
+                        </p>
+                        <div className="flex items-center justify-between text-[9px] pt-0.5" style={{ color: '#64748b' }}>
+                          <span>Data do Registro: {foto.dataHora}</span>
+                          <span className="font-bold" style={{ color: '#1d4ed8' }}>AutoGold Inspeção</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Rodapé do Laudo */}
+              <div
+                className="pt-3 flex justify-between items-center text-[10px]"
+                style={{ borderTop: '1px solid #e2e8f0', color: '#64748b' }}
+              >
+                <span>Documento fotográfico autenticado pela oficina {workshop.nomeOficina}</span>
+                <span className="font-mono font-bold">{quote.numero}</span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

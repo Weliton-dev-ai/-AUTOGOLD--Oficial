@@ -46,7 +46,14 @@ export async function generateQuotePdf(
         useCORS: true,
         logging: false,
         backgroundColor: '#FFFFFF',
-        windowWidth: 1024,
+        windowWidth: 800,
+        onclone: (_clonedDoc, clonedEl) => {
+          clonedEl.style.width = '794px';
+          clonedEl.style.maxWidth = '794px';
+          clonedEl.style.minWidth = '794px';
+          clonedEl.style.boxSizing = 'border-box';
+          clonedEl.style.backgroundColor = '#FFFFFF';
+        },
       });
 
       // 98% de qualidade JPEG para máxima nitidez das fotos e tipografia
@@ -58,7 +65,7 @@ export async function generateQuotePdf(
       }
 
       if (imgHeight <= pdfHeight) {
-        // Renderiza no topo da folha A4 com alta nitidez ('SLOW' para interpolação bicúbica suave)
+        // Renderiza no topo da folha A4 com alta nitidez
         pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, imgHeight, undefined, 'SLOW');
       } else {
         // Fallback caso uma página individual exceda a altura A4
@@ -83,7 +90,14 @@ export async function generateQuotePdf(
       useCORS: true,
       logging: false,
       backgroundColor: '#FFFFFF',
-      windowWidth: 1024,
+      windowWidth: 800,
+      onclone: (_clonedDoc, clonedEl) => {
+        clonedEl.style.width = '794px';
+        clonedEl.style.maxWidth = '794px';
+        clonedEl.style.minWidth = '794px';
+        clonedEl.style.boxSizing = 'border-box';
+        clonedEl.style.backgroundColor = '#FFFFFF';
+      },
     });
 
     const imgData = canvas.toDataURL('image/jpeg', 0.98);

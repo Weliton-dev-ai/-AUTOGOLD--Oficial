@@ -853,30 +853,30 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
                 id="btn-adicionar-polimento-orcamento"
                 type="button"
                 onClick={handleAddPolishingItem}
-                className="w-full py-3.5 px-4 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black rounded-xl shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 text-sm active:scale-[0.99] cursor-pointer"
+                className="w-full py-3.5 px-4 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black rounded-xl shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 text-xs sm:text-sm active:scale-[0.99] cursor-pointer text-center"
               >
-                <Plus className="w-4 h-4 text-slate-950" />
-                <span>
-                  Adicionar {POLISHING_PACKAGES[polishingDegree].nome} ao Orçamento (+{formatCurrencyBRL(customPolishingPrice || POLISHING_PACKAGES[polishingDegree].precosPorPorte[polishingVehicleSize])})
+                <Plus className="w-4 h-4 text-slate-950 shrink-0" />
+                <span className="leading-tight">
+                  Adicionar {POLISHING_PACKAGES[polishingDegree].nome} (+{formatCurrencyBRL(customPolishingPrice || POLISHING_PACKAGES[polishingDegree].precosPorPorte[polishingVehicleSize])})
                 </span>
               </button>
             </div>
           )}
 
           {/* Section 3: List of Added Items with Material Breakdown */}
-          <div className="bg-[#121E2B] border border-[#1E3349] rounded-2xl p-5 shadow-xl space-y-4">
-            <div className="flex items-center justify-between border-b border-[#1E3349] pb-3">
-              <div className="flex items-center gap-2 text-blue-400 font-bold text-sm uppercase tracking-wider">
+          <div className="bg-[#121E2B] border border-[#1E3349] rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#1E3349] pb-3">
+              <div className="flex items-center gap-2 text-blue-400 font-bold text-xs sm:text-sm uppercase tracking-wider">
                 <Layers className="w-4 h-4" />
                 <span>3. Peças e Serviços no Orçamento ({itens.length})</span>
               </div>
               <span className="text-xs text-slate-400 font-medium">
-                Funilaria e Polimento em um só PDF
+                Funilaria e Polimento no mesmo PDF
               </span>
             </div>
 
             {itens.length === 0 ? (
-              <div className="py-8 text-center text-slate-500 border border-dashed border-[#1E3349] rounded-xl">
+              <div className="py-8 text-center text-slate-500 border border-dashed border-[#1E3349] rounded-xl px-4">
                 <Car className="w-8 h-8 mx-auto mb-2 text-slate-600 opacity-60" />
                 <p className="text-xs font-semibold text-slate-400">Nenhum serviço ou peça adicionada ainda.</p>
                 <p className="text-[11px] text-slate-500 mt-1">
@@ -899,18 +899,18 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
                           : 'bg-[#0A0A0C] border-[#1E3349]'
                       }`}
                     >
-                      {/* Item Main Summary Row */}
-                      <div className="p-3.5 flex items-center justify-between gap-3">
+                      {/* Item Main Summary Row - Responsivo Celular e Computador */}
+                      <div className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`w-5 h-5 rounded-full text-[11px] font-bold flex items-center justify-center shrink-0 ${
+                          <div className="flex items-start sm:items-center gap-2 flex-wrap">
+                            <span className={`w-5 h-5 rounded-full text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5 sm:mt-0 ${
                               isPolishing
                                 ? 'bg-amber-500/30 border border-amber-500/60 text-yellow-300'
                                 : 'bg-blue-600/30 border border-blue-500/40 text-blue-300'
                             }`}>
                               {index + 1}
                             </span>
-                            <span className="font-bold text-sm text-slate-100 truncate">
+                            <span className="font-bold text-sm sm:text-base text-slate-100 break-words leading-tight">
                               {item.nomePeca}
                             </span>
                             {isPolishing ? (
@@ -926,13 +926,13 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
                           </div>
 
                           {item.observacoes && (
-                            <p className="text-xs text-slate-400 mt-1 ml-7">
+                            <p className="text-xs text-slate-400 mt-1 pl-7">
                               Obs: {item.observacoes}
                             </p>
                           )}
 
                           {/* Mini Cost Breakdown Pills */}
-                          <div className="flex flex-wrap items-center gap-2 mt-2 ml-7 text-[11px] text-slate-400">
+                          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 mt-2 pl-0 sm:pl-7 text-[11px] text-slate-400">
                             <span>
                               Mão de Obra:{' '}
                               <strong className="text-slate-200">
@@ -960,36 +960,38 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
                           </div>
                         </div>
 
-                        {/* Right: Total Price & Actions */}
-                        <div className="flex items-center gap-2 shrink-0">
-                          <div className="text-right">
-                            <span className="text-xs text-slate-400 block text-[10px] uppercase">
+                        {/* Right / Bottom: Total Price & Actions (Enquadramento Responsivo) */}
+                        <div className="flex items-center justify-between sm:justify-end gap-3 pt-2.5 sm:pt-0 border-t sm:border-t-0 border-[#1E3349]/80 shrink-0">
+                          <div className="text-left sm:text-right">
+                            <span className="text-slate-400 block text-[10px] uppercase font-semibold">
                               Subtotal
                             </span>
-                            <span className="font-black text-sm text-white">
+                            <span className="font-black text-base sm:text-lg text-emerald-400 tabular-nums">
                               {formatCurrencyBRL(item.valorTotalItem)}
                             </span>
                           </div>
 
-                          {item.detalhesInsumos && item.detalhesInsumos.length > 0 && (
+                          <div className="flex items-center gap-1.5">
+                            {item.detalhesInsumos && item.detalhesInsumos.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => toggleItemExpansion(item.id)}
+                                title="Ver detalhes dos insumos"
+                                className="p-2 rounded-lg bg-[#162536] text-slate-400 hover:text-white border border-[#223952] transition-colors cursor-pointer"
+                              >
+                                {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                              </button>
+                            )}
+
                             <button
                               type="button"
-                              onClick={() => toggleItemExpansion(item.id)}
-                              title="Ver detalhes dos insumos"
-                              className="p-1.5 rounded-lg bg-[#162536] text-slate-400 hover:text-white border border-[#223952] transition-colors cursor-pointer"
+                              onClick={() => handleRemoveItem(item.id)}
+                              title="Remover item"
+                              className="p-2 rounded-lg bg-red-950/60 text-red-400 hover:text-red-300 border border-red-800/80 transition-colors cursor-pointer"
                             >
-                              {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                              <Trash2 className="w-4 h-4" />
                             </button>
-                          )}
-
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveItem(item.id)}
-                            title="Remover item"
-                            className="p-1.5 rounded-lg bg-red-950/60 text-red-400 hover:text-red-300 border border-red-800/80 transition-colors cursor-pointer"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          </div>
                         </div>
                       </div>
 
