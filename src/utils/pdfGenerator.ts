@@ -25,6 +25,11 @@ export async function generateQuotePdf(
   // Dimensões A4 em mm
   const pdfWidth = 210;
   const pdfHeight = 297;
+  // Margens físicas do documento PDF (em mm) para garantir respiro profissional
+  const marginX = 8;
+  const marginY = 8;
+  const printableWidth = pdfWidth - (marginX * 2); // 194mm
+  const printableHeight = pdfHeight - (marginY * 2); // 281mm
 
   const pdf = new jsPDF({
     orientation: 'p',
@@ -44,42 +49,45 @@ export async function generateQuotePdf(
       const canvas = await html2canvas(pageEl, {
         scale: 2.2, // Alta nitidez
         useCORS: true,
+        allowTaint: true,
         logging: false,
         backgroundColor: '#FFFFFF',
-        windowWidth: 800,
+        windowWidth: 850,
         onclone: (_clonedDoc, clonedEl) => {
           clonedEl.style.width = '794px';
           clonedEl.style.maxWidth = '794px';
           clonedEl.style.minWidth = '794px';
           clonedEl.style.boxSizing = 'border-box';
           clonedEl.style.backgroundColor = '#FFFFFF';
+          clonedEl.style.margin = '0 auto';
+          clonedEl.style.transform = 'none';
         },
       });
 
       // 98% de qualidade JPEG para máxima nitidez das fotos e tipografia
       const imgData = canvas.toDataURL('image/jpeg', 0.98);
-      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+      const imgHeight = (canvas.height * printableWidth) / canvas.width;
 
       if (i > 0) {
         pdf.addPage('a4', 'p');
       }
 
-      if (imgHeight <= pdfHeight) {
-        // Renderiza no topo da folha A4 com alta nitidez
-        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, imgHeight, undefined, 'SLOW');
+      if (imgHeight <= printableHeight) {
+        // Renderiza centralizado com margens reais na folha A4
+        pdf.addImage(imgData, 'JPEG', marginX, marginY, printableWidth, imgHeight, undefined, 'SLOW');
       } else {
-        // Fallback caso uma página individual exceda a altura A4
+        // Fallback caso uma página individual exceda a altura útil
         let heightLeft = imgHeight;
-        let position = 0;
+        let position = marginY;
 
-        pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight, undefined, 'SLOW');
-        heightLeft -= pdfHeight;
+        pdf.addImage(imgData, 'JPEG', marginX, position, printableWidth, imgHeight, undefined, 'SLOW');
+        heightLeft -= printableHeight;
 
         while (heightLeft > 5) {
-          position = heightLeft - imgHeight;
+          position = marginY - (imgHeight - heightLeft);
           pdf.addPage('a4', 'p');
-          pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight, undefined, 'SLOW');
-          heightLeft -= pdfHeight;
+          pdf.addImage(imgData, 'JPEG', marginX, position, printableWidth, imgHeight, undefined, 'SLOW');
+          heightLeft -= printableHeight;
         }
       }
     }
@@ -88,32 +96,35 @@ export async function generateQuotePdf(
     const canvas = await html2canvas(container, {
       scale: 2.2,
       useCORS: true,
+      allowTaint: true,
       logging: false,
       backgroundColor: '#FFFFFF',
-      windowWidth: 800,
+      windowWidth: 850,
       onclone: (_clonedDoc, clonedEl) => {
         clonedEl.style.width = '794px';
         clonedEl.style.maxWidth = '794px';
         clonedEl.style.minWidth = '794px';
         clonedEl.style.boxSizing = 'border-box';
         clonedEl.style.backgroundColor = '#FFFFFF';
+        clonedEl.style.margin = '0 auto';
+        clonedEl.style.transform = 'none';
       },
     });
 
     const imgData = canvas.toDataURL('image/jpeg', 0.98);
-    const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+    const imgHeight = (canvas.height * printableWidth) / canvas.width;
 
     let heightLeft = imgHeight;
-    let position = 0;
+    let position = marginY;
 
-    pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight, undefined, 'SLOW');
-    heightLeft -= pdfHeight;
+    pdf.addImage(imgData, 'JPEG', marginX, position, printableWidth, imgHeight, undefined, 'SLOW');
+    heightLeft -= printableHeight;
 
     while (heightLeft > 5) {
-      position = heightLeft - imgHeight;
+      position = marginY - (imgHeight - heightLeft);
       pdf.addPage('a4', 'p');
-      pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight, undefined, 'SLOW');
-      heightLeft -= pdfHeight;
+      pdf.addImage(imgData, 'JPEG', marginX, position, printableWidth, imgHeight, undefined, 'SLOW');
+      heightLeft -= printableHeight;
     }
   }
 

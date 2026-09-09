@@ -262,43 +262,50 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
         {/* Canvas de Documento Timbrado Imprimível (A4) com ID para html2canvas & jsPDF */}
         <div
           id="printable-quote-content"
-          className="text-slate-900 font-sans bg-white overflow-x-auto"
+          className="text-slate-900 font-sans bg-slate-900/40 p-2 sm:p-6 overflow-x-auto flex flex-col items-center gap-6"
           style={{
-            backgroundColor: '#ffffff',
             color: '#0f172a',
             fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
           }}
         >
-          {/* PÁGINA 1: ORÇAMENTO TIMBRADO OFICIAL */}
+          {/* PÁGINA 1: ORÇAMENTO TIMBRADO OFICIAL A4 */}
           <div
-            className="pdf-page p-3.5 sm:p-8 md:p-10 space-y-4 bg-white print:p-2"
-            style={{ backgroundColor: '#ffffff', color: '#0f172a' }}
+            className="pdf-page bg-white shadow-2xl rounded-xl space-y-4 print:shadow-none print:m-0 print:rounded-none"
+            style={{
+              width: '794px',
+              minWidth: '794px',
+              maxWidth: '794px',
+              padding: '36px 40px',
+              boxSizing: 'border-box',
+              backgroundColor: '#ffffff',
+              color: '#0f172a',
+            }}
           >
             {/* Cabeçalho da Oficina com Logotipo & Dados Fiscais */}
             <div
-              className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-4 print-avoid-break"
+              className="flex items-center justify-between gap-4 pb-4 print-avoid-break"
               style={{ borderBottom: '2px solid #0f172a' }}
             >
-              <div className="flex items-center gap-3 sm:gap-4">
+              <div className="flex items-center gap-4">
                 {workshop.logotipoUrl ? (
                   <img
                     src={workshop.logotipoUrl}
                     alt={workshop.nomeOficina}
-                    className="h-14 sm:h-16 max-w-[150px] sm:max-w-[180px] object-contain rounded shrink-0"
+                    className="h-16 max-w-[180px] object-contain rounded shrink-0"
                     crossOrigin="anonymous"
                   />
                 ) : (
                   <div
-                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl flex flex-col items-center justify-center font-black shadow-sm shrink-0"
+                    className="w-16 h-16 rounded-xl flex flex-col items-center justify-center font-black shadow-sm shrink-0"
                     style={{ backgroundColor: '#0f172a', color: '#ffffff' }}
                   >
-                    <span className="text-[10px] sm:text-[11px] uppercase tracking-wider" style={{ color: '#60a5fa' }}>AUTO</span>
-                    <span className="text-xs sm:text-sm" style={{ color: '#facc15' }}>GOLD</span>
+                    <span className="text-[11px] uppercase tracking-wider" style={{ color: '#60a5fa' }}>AUTO</span>
+                    <span className="text-sm" style={{ color: '#facc15' }}>GOLD</span>
                   </div>
                 )}
 
                 <div className="min-w-0 flex-1">
-                  <h1 className="text-lg sm:text-xl font-black tracking-tight leading-tight" style={{ color: '#0f172a' }}>
+                  <h1 className="text-xl font-black tracking-tight leading-tight" style={{ color: '#0f172a' }}>
                     {workshop.nomeOficina}
                   </h1>
                   {workshop.razaoSocial && (
@@ -318,7 +325,7 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
 
               {/* Número e Validade do Orçamento */}
               <div
-                className="w-full sm:w-auto text-left sm:text-right p-3 sm:p-3.5 rounded-xl shrink-0"
+                className="text-right p-3.5 rounded-xl shrink-0"
                 style={{ backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1' }}
               >
                 <span className="block text-[10px] font-bold uppercase tracking-wider" style={{ color: '#64748b' }}>
@@ -328,10 +335,10 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                     ? 'Orçamento de Funilaria & Polimento'
                     : 'Orçamento de Funilaria e Pintura'}
                 </span>
-                <span className="block text-base sm:text-lg font-black font-mono" style={{ color: '#0f172a' }}>
+                <span className="block text-lg font-black font-mono" style={{ color: '#0f172a' }}>
                   {quote.numero}
                 </span>
-                <div className="mt-1 sm:mt-1.5 text-xs space-y-0.5" style={{ color: '#475569' }}>
+                <div className="mt-1.5 text-xs space-y-0.5" style={{ color: '#475569' }}>
                   <p>
                     <strong>Emissão:</strong> {new Date(quote.dataCriacao).toLocaleDateString('pt-BR')}
                   </p>
@@ -342,11 +349,11 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
               </div>
             </div>
 
-            {/* Dados do Cliente e Identificação do Veículo (Responsivo 1 ou 2 Colunas) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 print-avoid-break">
+            {/* Dados do Cliente e Identificação do Veículo (2 Colunas Fixas) */}
+            <div className="grid grid-cols-2 gap-4 print-avoid-break">
               {/* Caixa Cliente */}
               <div
-                className="p-3 sm:p-3.5 rounded-xl space-y-1 text-xs"
+                className="p-3.5 rounded-xl space-y-1 text-xs"
                 style={{ backgroundColor: '#f8fafc', border: '1px solid #cbd5e1' }}
               >
                 <span
@@ -373,7 +380,7 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
 
               {/* Caixa Veículo */}
               <div
-                className="p-3 sm:p-3.5 rounded-xl space-y-1 text-xs"
+                className="p-3.5 rounded-xl space-y-1 text-xs"
                 style={{ backgroundColor: '#f8fafc', border: '1px solid #cbd5e1' }}
               >
                 <span
@@ -400,18 +407,18 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
               </div>
             </div>
 
-            {/* Tabela de Serviços: Mão de Obra e Polimento com Enquadramento Responsivo e Preço Claro */}
+            {/* Tabela de Serviços: Mão de Obra e Polimento com Larguras Fixas e Alinhamento Rigoroso */}
             <div
               className="rounded-xl overflow-hidden print-avoid-break shadow-sm w-full"
               style={{ border: '1px solid #cbd5e1' }}
             >
-              <table className="w-full text-left text-xs border-collapse table-auto sm:table-fixed">
+              <table className="w-full text-left text-xs border-collapse" style={{ tableLayout: 'fixed' }}>
                 <thead>
                   <tr style={{ backgroundColor: '#0f172a', color: '#ffffff' }}>
-                    <th className="py-2.5 px-2 sm:px-3 w-9 sm:w-12 text-center text-[10px] uppercase font-bold tracking-wider">#</th>
-                    <th className="py-2.5 px-2.5 sm:px-3 text-[10px] uppercase font-bold tracking-wider">Peça / Serviço</th>
-                    <th className="hidden sm:table-cell py-2.5 px-3 w-40 text-[10px] uppercase font-bold tracking-wider">Discriminação</th>
-                    <th className="py-2.5 px-2.5 sm:px-4 text-right w-28 sm:w-36 text-[10px] uppercase font-bold tracking-wider whitespace-nowrap">Preço (R$)</th>
+                    <th style={{ width: '44px', padding: '10px 8px', textAlign: 'center' }} className="text-[10px] uppercase font-bold tracking-wider">#</th>
+                    <th style={{ padding: '10px 12px' }} className="text-[10px] uppercase font-bold tracking-wider">Peça / Serviço</th>
+                    <th style={{ width: '180px', padding: '10px 12px' }} className="text-[10px] uppercase font-bold tracking-wider">Discriminação</th>
+                    <th style={{ width: '144px', padding: '10px 14px', textAlign: 'right' }} className="text-[10px] uppercase font-bold tracking-wider whitespace-nowrap">Preço (R$)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -426,44 +433,23 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                           borderBottom: '1px solid #e2e8f0',
                         }}
                       >
-                        <td className="py-2.5 px-2 sm:px-3 text-center font-bold text-xs" style={{ color: '#475569' }}>
+                        <td style={{ width: '44px', padding: '10px 8px', textAlign: 'center' }} className="font-bold text-xs text-slate-500">
                           {idx + 1}
                         </td>
-                        <td className="py-2.5 px-2.5 sm:px-3">
-                          <span className="font-bold block text-xs sm:text-sm leading-snug break-words" style={{ color: '#0f172a' }}>
+                        <td style={{ padding: '10px 12px' }}>
+                          <span className="font-bold block text-xs leading-snug" style={{ color: '#0f172a' }}>
                             {item.nomePeca}
                           </span>
-                          {/* Tag de Discriminação no Mobile (abaixo do nome para não espremer colunas) */}
-                          <div className="sm:hidden mt-1">
-                            {isPolishing ? (
-                              <span
-                                className="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold"
-                                style={{
-                                  backgroundColor: '#fef3c7',
-                                  color: '#92400e',
-                                  border: '1px solid #fcd34d',
-                                }}
-                              >
-                                Polimento & Estética
-                              </span>
-                            ) : (
-                              <span
-                                className="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold"
-                                style={{
-                                  backgroundColor: '#dbeafe',
-                                  color: '#1e40af',
-                                  border: '1px solid #93c5fd',
-                                }}
-                              >
-                                Mão de Obra & Pintura
-                              </span>
-                            )}
-                          </div>
+                          {item.observacoes && (
+                            <span className="text-[10px] text-slate-500 block mt-0.5">
+                              Obs: {item.observacoes}
+                            </span>
+                          )}
                         </td>
-                        <td className="hidden sm:table-cell py-2.5 px-3">
+                        <td style={{ width: '180px', padding: '10px 12px' }}>
                           {isPolishing ? (
                             <span
-                              className="inline-block px-2 py-0.5 rounded text-[10px] font-bold"
+                              className="inline-block px-2.5 py-1 rounded text-[10px] font-bold"
                               style={{
                                 backgroundColor: '#fef3c7',
                                 color: '#92400e',
@@ -474,7 +460,7 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                             </span>
                           ) : (
                             <span
-                              className="inline-block px-2 py-0.5 rounded text-[10px] font-bold"
+                              className="inline-block px-2.5 py-1 rounded text-[10px] font-bold"
                               style={{
                                 backgroundColor: '#dbeafe',
                                 color: '#1e40af',
@@ -485,7 +471,7 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                             </span>
                           )}
                         </td>
-                        <td className="py-2.5 px-2.5 sm:px-4 text-right font-black text-xs sm:text-sm whitespace-nowrap tabular-nums" style={{ color: '#0f172a' }}>
+                        <td style={{ width: '144px', padding: '10px 14px', textAlign: 'right' }} className="font-black text-sm whitespace-nowrap tabular-nums text-slate-900">
                           {formatCurrencyBRL(item.valorTotalItem)}
                         </td>
                       </tr>
@@ -495,11 +481,11 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
               </table>
             </div>
 
-            {/* Resumo Financeiro com Caixa de Sinal de 50% Pix e Totalizador (Responsivo Celular e Computador) */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4 items-start print-avoid-break">
-              {/* Esquerda: Caixa de Entrada 50% via Pix (7 colunas no desktop, 100% no mobile) */}
+            {/* Resumo Financeiro com Caixa de Sinal de 50% Pix e Totalizador */}
+            <div className="grid grid-cols-12 gap-4 items-start print-avoid-break">
+              {/* Esquerda: Caixa de Entrada 50% via Pix (7 colunas) */}
               <div
-                className="col-span-1 md:col-span-7 p-3.5 sm:p-4 rounded-2xl space-y-3"
+                className="col-span-7 p-4 rounded-2xl space-y-3"
                 style={{
                   backgroundColor: '#0f172a',
                   color: '#ffffff',
@@ -507,7 +493,7 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                 }}
               >
                 <div
-                  className="flex flex-wrap items-center justify-between gap-1.5 pb-2"
+                  className="flex items-center justify-between pb-2"
                   style={{ borderBottom: '1px solid #334155' }}
                 >
                   <span
@@ -526,7 +512,7 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                 </div>
 
                 {/* Valores Divididos (50% Entrada e 50% Entrega) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <div
                     className="p-3 rounded-xl"
                     style={{
@@ -541,7 +527,7 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                       Sinal de Entrada (50%):
                     </span>
                     <span
-                      className="text-lg sm:text-xl font-black block mt-0.5 tabular-nums"
+                      className="text-xl font-black block mt-0.5 tabular-nums"
                       style={{ color: '#34d399' }}
                     >
                       {formatCurrencyBRL(sinal50Final)}
@@ -562,7 +548,7 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                       Saldo na Entrega (50%):
                     </span>
                     <span
-                      className="text-lg sm:text-xl font-bold block mt-0.5 tabular-nums"
+                      className="text-xl font-bold block mt-0.5 tabular-nums"
                       style={{ color: '#f8fafc' }}
                     >
                       {formatCurrencyBRL(restante50Final)}
@@ -578,13 +564,13 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                     border: '1px solid #334155',
                   }}
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                  <div className="flex items-center justify-between gap-1.5">
                     <span className="text-xs font-semibold" style={{ color: '#cbd5e1' }}>
                       Chave Pix ({workshop.tipoChavePix}):
                     </span>
                     <div className="flex items-center gap-1.5 overflow-hidden">
                       <span
-                        className="font-mono font-bold select-all text-xs sm:text-sm tracking-wider px-2 sm:px-2.5 py-1 rounded-lg truncate"
+                        className="font-mono font-bold select-all text-sm tracking-wider px-2.5 py-1 rounded-lg truncate"
                         style={{
                           backgroundColor: '#0f172a',
                           color: '#facc15',
@@ -605,7 +591,7 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                     </div>
                   </div>
                   <div
-                    className="flex flex-wrap items-center justify-between gap-1 text-xs pt-2"
+                    className="flex items-center justify-between gap-1 text-xs pt-2"
                     style={{ borderTop: '1px solid #1e293b' }}
                   >
                     <span style={{ color: '#94a3b8' }}>Favorecido / Titular:</span>
@@ -620,9 +606,9 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                 </p>
               </div>
 
-              {/* Direita: Totalizador (5 colunas no desktop, 100% no mobile) */}
+              {/* Direita: Totalizador (5 colunas) */}
               <div
-                className="col-span-1 md:col-span-5 p-3.5 sm:p-4 rounded-2xl space-y-2.5 text-xs"
+                className="col-span-5 p-4 rounded-2xl space-y-2.5 text-xs"
                 style={{
                   backgroundColor: '#f8fafc',
                   border: '1px solid #cbd5e1',
@@ -646,10 +632,10 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                   className="pt-2 flex justify-between items-baseline"
                   style={{ borderTop: '2px solid #0f172a' }}
                 >
-                  <span className="font-black text-xs sm:text-sm uppercase" style={{ color: '#0f172a' }}>
+                  <span className="font-black text-sm uppercase" style={{ color: '#0f172a' }}>
                     VALOR TOTAL:
                   </span>
-                  <span className="text-xl sm:text-2xl font-black tabular-nums" style={{ color: '#0f172a' }}>
+                  <span className="text-2xl font-black tabular-nums" style={{ color: '#0f172a' }}>
                     {formatCurrencyBRL(valorTotalFinal)}
                   </span>
                 </div>
@@ -697,8 +683,16 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
           {hasPhotos && photoPages.map((pagePhotos, pageIndex) => (
             <div
               key={`photo-page-${pageIndex}`}
-              className="pdf-page p-6 sm:p-10 space-y-4 bg-white border-t-4 border-dashed border-slate-200 print:border-none print:p-2 print-page-break"
-              style={{ backgroundColor: '#ffffff', color: '#0f172a' }}
+              className="pdf-page bg-white shadow-2xl rounded-xl space-y-4 print:shadow-none print:m-0 print:rounded-none print-page-break"
+              style={{
+                width: '794px',
+                minWidth: '794px',
+                maxWidth: '794px',
+                padding: '36px 40px',
+                boxSizing: 'border-box',
+                backgroundColor: '#ffffff',
+                color: '#0f172a',
+              }}
             >
               {/* Cabeçalho do Laudo Fotográfico */}
               <div
@@ -756,7 +750,7 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                       style={{ border: '1px solid #cbd5e1', backgroundColor: '#ffffff' }}
                     >
                       {/* Imagem com proporção estabilizada */}
-                      <div className="relative w-full h-48 sm:h-52 bg-white overflow-hidden flex items-center justify-center">
+                      <div className="relative w-full h-48 bg-white overflow-hidden flex items-center justify-center">
                         <img
                           src={foto.url}
                           alt={foto.descricao}
