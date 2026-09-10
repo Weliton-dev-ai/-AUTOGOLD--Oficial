@@ -81,7 +81,7 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
       const newPhotos: DamagePhoto[] = [];
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const dataUrl = await compressImage(file, 1920, 0.92);
+        const dataUrl = await compressImage(file, 1280, 1280, 0.85);
         const dataFormatada = new Date().toLocaleString('pt-BR', {
           day: '2-digit',
           month: '2-digit',
@@ -562,7 +562,7 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                     <img
                       src={workshop.logotipoUrl}
                       alt={workshop.nomeOficina}
-                      className="h-16 max-w-[180px] object-contain rounded shrink-0 opacity-0 pointer-events-none"
+                      className="h-16 max-w-[180px] object-contain rounded shrink-0 block"
                       loading="eager"
                     />
                   </div>
@@ -1034,7 +1034,7 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                         <img
                           src={workshop.logotipoUrl}
                           alt={workshop.nomeOficina}
-                          className="h-10 max-w-[130px] object-contain rounded opacity-0 pointer-events-none"
+                          className="h-10 max-w-[130px] object-contain rounded block"
                           loading="eager"
                         />
                       </div>

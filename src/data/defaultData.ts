@@ -1,4 +1,5 @@
 import { BodyPartItem, MaterialInsumo, WorkshopProfile } from '../types';
+import { SAMPLE_PHOTO_1, SAMPLE_PHOTO_2 } from './samplePhotos';
 
 export const DEFAULT_MATERIALS: MaterialInsumo[] = [
   {
@@ -364,5 +365,19 @@ export const SAMPLE_QUOTES = [
     valorRestante50: 750.00,
     prazoExecucaoDias: 3,
     observacoesGerais: 'Veículo liberado para aplicação de verniz de secagem rápida em cabine.',
+    fotosAvarias: [
+      {
+        id: 'foto_sample_1',
+        url: SAMPLE_PHOTO_1,
+        descricao: 'Parachoque Dianteiro - Raspado profundo no canto direito com pequeno trincado soldado a quente',
+        dataHora: '10/09/2026 às 14:30',
+      },
+      {
+        id: 'foto_sample_2',
+        url: SAMPLE_PHOTO_2,
+        descricao: 'Paralama Dianteiro Direito - Amassado no vinco com perda localizada de verniz',
+        dataHora: '10/09/2026 às 14:32',
+      },
+    ],
   },
 ];

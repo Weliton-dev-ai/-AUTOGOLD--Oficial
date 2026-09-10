@@ -133,15 +133,12 @@ export async function generateQuotePdf(
 
             clonedDoc.body.appendChild(clonedEl);
 
-            // Oculta tags <img> que estão dentro de wrappers que já possuem background-image ativo.
-            // O html2canvas possui suporte nativo impecável a background-image (contain/cover),
-            // enquanto CSS object-fit em tags <img> é instável no html2canvas.
+            // Garantir que todas as imagens (logotipo e fotos do laudo) permaneçam 100% visíveis e nítidas no PDF
             const clonedImgs = Array.from(clonedEl.querySelectorAll<HTMLImageElement>('img'));
             clonedImgs.forEach((img) => {
-              const p = img.parentElement;
-              if (p && p.style.backgroundImage && p.style.backgroundImage.includes('url')) {
-                img.style.opacity = '0';
-              }
+              img.style.opacity = '1';
+              img.style.visibility = 'visible';
+              img.style.display = 'block';
             });
 
             // Injetar folha de estilo para eliminar definitivamente sobreposição de letras e manchas

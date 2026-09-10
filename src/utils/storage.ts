@@ -115,7 +115,22 @@ export function getUserQuotes(email: string): Quote[] {
     const key = `autogold_quotes_${email}`;
     const raw = localStorage.getItem(key);
     if (raw) {
-      return JSON.parse(raw);
+      const parsed: Quote[] = JSON.parse(raw);
+      let modified = false;
+      const enriched = parsed.map((q) => {
+        if (q.id === 'quote_sample_1' && (!q.fotosAvarias || q.fotosAvarias.length === 0)) {
+          const sample = SAMPLE_QUOTES.find((s) => s.id === 'quote_sample_1');
+          if (sample?.fotosAvarias) {
+            modified = true;
+            return { ...q, fotosAvarias: sample.fotosAvarias };
+          }
+        }
+        return q;
+      });
+      if (modified) {
+        localStorage.setItem(key, JSON.stringify(enriched));
+      }
+      return enriched;
     }
     // Inicializa com dados de amostra para a primeira experiência do usuário
     localStorage.setItem(key, JSON.stringify(SAMPLE_QUOTES));

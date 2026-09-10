@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Car, 
   User, 
@@ -145,6 +145,28 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
   const [obsGerais, setObsGerais] = useState<string>(
     editingQuote?.observacoesGerais || 'Veículo com verniz e peças originais. Serviço com garantia padrão da oficina.'
   );
+
+  useEffect(() => {
+    if (editingQuote) {
+      setCliente(editingQuote.cliente || { nome: '', telefone: '', email: '', documento: '' });
+      setVeiculo(editingQuote.veiculo || { placa: '', marca: '', modelo: '', ano: '', cor: '', tipoPintura: 'solida' });
+      const margem = editingQuote.margemLucroAplicada ?? workshop.margemLucroPadrao;
+      setMargemLucro(margem);
+      if (editingQuote.itens) {
+        setItens(recalculateQuoteItemsWithMargin(editingQuote.itens, margem));
+      }
+      setFotosAvarias(editingQuote.fotosAvarias || []);
+      setChecklistVistoria(editingQuote.checklistVistoria || {
+        nivelCombustivel: '1/2',
+        kmEntrada: '',
+        possuiEstepe: true,
+        possuiMacacoChave: true,
+      });
+      setDesconto(editingQuote.desconto || 0);
+      setPrazoDias(editingQuote.prazoExecucaoDias || 3);
+      setObsGerais(editingQuote.observacoesGerais || 'Veículo com verniz e peças originais. Serviço com garantia padrão da oficina.');
+    }
+  }, [editingQuote?.id]);
 
   // UI state
   const [expandedItemDetails, setExpandedItemDetails] = useState<Record<string, boolean>>({});
