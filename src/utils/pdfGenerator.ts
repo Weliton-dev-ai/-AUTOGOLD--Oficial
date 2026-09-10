@@ -47,20 +47,25 @@ export async function generateQuotePdf(
   const originalParentTransform = parent ? parent.style.transform : '';
   const originalParentWidth = parent ? parent.style.width : '';
 
-  // Forçar o elemento e seu pai para 794px sem qualquer CSS transform
+  // Forçar o elemento e seu pai para 794px sem qualquer CSS transform ou transition
   // Isso impede que escalas de visualização mobile distorçam a rasterização das fontes no canvas
+  const originalParentTransition = parent ? parent.style.transition : '';
+  const originalContainerTransition = container.style.transition;
+
   if (parent) {
     parent.style.transform = 'none';
+    parent.style.transition = 'none';
     parent.style.width = '794px';
   }
   container.style.transform = 'none';
+  container.style.transition = 'none';
   container.style.transformOrigin = 'top left';
   container.style.width = '794px';
   container.style.maxWidth = '794px';
   container.style.minWidth = '794px';
 
-  // Breve espera para o motor de layout do navegador atualizar o DOM em 794px reais
-  await new Promise((resolve) => setTimeout(resolve, 80));
+  // Espera adequada para o motor de layout do navegador atualizar o DOM em 794px reais
+  await new Promise((resolve) => setTimeout(resolve, 150));
 
   try {
     // 1. Garantir que todas as imagens no container estejam carregadas e prontas
@@ -80,7 +85,7 @@ export async function generateQuotePdf(
     const pageElements = Array.from(container.querySelectorAll<HTMLElement>('.pdf-page'));
 
     if (pageElements.length > 0) {
-      // Processamento Página por Página: evita cortes no meio de fotos e faixas indesejadas
+      // Processamento Página por Página: cada .pdf-page corresponde a 1 folha A4 exata
       for (let i = 0; i < pageElements.length; i++) {
         const pageEl = pageElements[i];
 
@@ -98,30 +103,36 @@ export async function generateQuotePdf(
         );
 
         const canvas = await html2canvas(pageEl, {
-          scale: 2, // 2x exato (sem frações) para evitar borrões e erros de interpolação subpixel
+          scale: 2, // 2x exato para nitidez cristalina
           useCORS: true,
-          allowTaint: false, // CRÍTICO: false impede SecurityError no canvas.toDataURL()
+          allowTaint: false,
           logging: false,
           backgroundColor: '#FFFFFF',
           width: 794,
-          windowWidth: 794,
+          windowWidth: 1024, // Largura desktop para garantir media queries desktop e sem reflow mobile
           scrollX: 0,
           scrollY: 0,
           imageTimeout: 15000,
           onclone: (clonedDoc, clonedEl) => {
-            // ISOLAMENTO TOTAL DA PÁGINA:
-            // Esvaziamos o body do documento clonado e anexamos SOMENTE a página atual no topo (0,0).
-            // Isso resolve de forma definitiva o problema onde a Página 2 (fotos) ficava em branco ou deslocada
-            // devido ao offsetTop acumulado pelas páginas anteriores.
+            // Isolamento da página no topo esquerdo do documento clonado
+            clonedDoc.documentElement.style.width = '794px';
+            clonedDoc.documentElement.style.margin = '0';
+            clonedDoc.documentElement.style.padding = '0';
+            clonedDoc.documentElement.style.backgroundColor = '#FFFFFF';
+
             clonedDoc.body.innerHTML = '';
+            clonedDoc.body.style.width = '794px';
+            clonedDoc.body.style.maxWidth = '794px';
+            clonedDoc.body.style.minWidth = '794px';
             clonedDoc.body.style.margin = '0';
             clonedDoc.body.style.padding = '0';
             clonedDoc.body.style.backgroundColor = '#FFFFFF';
             clonedDoc.body.style.overflow = 'visible';
 
+            // Posição estritamente em (0, 0) sem '0 auto' para não haver deslocamento horizontal
             clonedEl.style.transform = 'none';
             clonedEl.style.webkitTransform = 'none';
-            clonedEl.style.margin = '0 auto';
+            clonedEl.style.margin = '0';
             clonedEl.style.position = 'relative';
             clonedEl.style.top = '0';
             clonedEl.style.left = '0';
@@ -133,50 +144,49 @@ export async function generateQuotePdf(
 
             clonedDoc.body.appendChild(clonedEl);
 
-            // Garantir que todas as imagens (logotipo e fotos do laudo) permaneçam 100% visíveis e nítidas no PDF
+            // Garantir que imagens e canvas permaneçam 100% visíveis
             const clonedImgs = Array.from(clonedEl.querySelectorAll<HTMLImageElement>('img'));
             clonedImgs.forEach((img) => {
               img.style.opacity = '1';
               img.style.visibility = 'visible';
-              img.style.display = 'block';
             });
 
-            // Injetar folha de estilo para eliminar definitivamente sobreposição de letras e manchas
+            // Folha de estilo refinada:
+            // NÃO usar text-rendering: geometricPrecision nem letter-spacing: 0px (causadores de letras sobrepostas)
+            // Preservar fontes mono nos números de orçamento e placas
             const style = clonedDoc.createElement('style');
             style.innerHTML = `
               * {
-                font-family: Arial, Helvetica, sans-serif !important;
-                letter-spacing: 0px !important;
-                word-spacing: normal !important;
-                -webkit-font-smoothing: antialiased !important;
-                text-rendering: geometricPrecision !important;
                 box-sizing: border-box !important;
+                -webkit-font-smoothing: antialiased !important;
+              }
+              body, .pdf-page {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+                text-rendering: auto !important;
+                letter-spacing: normal !important;
+                word-spacing: normal !important;
+                color: #0f172a !important;
+                background-color: #ffffff !important;
               }
               .pdf-page {
                 width: 794px !important;
                 min-width: 794px !important;
                 max-width: 794px !important;
+                margin: 0 !important;
+                padding: 36px 40px !important;
                 box-sizing: border-box !important;
-                background-color: #ffffff !important;
-                color: #0f172a !important;
-                transform: none !important;
-                margin: 0 auto !important;
-                position: relative !important;
-                top: 0 !important;
-                left: 0 !important;
+              }
+              .font-mono, [class*="font-mono"] {
+                font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
               }
               table {
                 table-layout: fixed !important;
-                width: 100% !important;
+                width: 714px !important;
                 border-collapse: collapse !important;
               }
               th, td {
-                overflow: hidden !important;
                 word-break: normal !important;
-                letter-spacing: 0px !important;
-              }
-              h1, h2, h3, h4, p, span, div, strong, td, th {
-                letter-spacing: 0px !important;
+                letter-spacing: normal !important;
               }
             `;
             clonedDoc.head.appendChild(style);
@@ -194,27 +204,13 @@ export async function generateQuotePdf(
         if (imgHeight <= printableHeight) {
           // Renderiza centralizado com margens reais na folha A4
           pdf.addImage(imgData, 'JPEG', marginX, marginY, printableWidth, imgHeight, undefined, 'SLOW');
-        } else if (imgHeight <= printableHeight * 1.20) {
-          // Se a página exceder levemente (até 20%), escala proporcionalmente para caber 100% em 1 única folha A4
-          // Isso previne páginas em branco indesejadas, cortes de assinaturas ou cortes de rodapés
+        } else {
+          // Se a página for um pouco maior que a altura da folha A4, escala proporcionalmente
+          // para caber 100% em 1 única folha sem cortar assinaturas nem fotos ao meio
           const scale = printableHeight / imgHeight;
           const scaledWidth = printableWidth * scale;
           const centeredX = marginX + (printableWidth - scaledWidth) / 2;
           pdf.addImage(imgData, 'JPEG', centeredX, marginY, scaledWidth, printableHeight, undefined, 'SLOW');
-        } else {
-          // Fallback caso uma página individual exceda muito a altura útil (tabelas gigantescas)
-          let heightLeft = imgHeight;
-          let position = marginY;
-
-          pdf.addImage(imgData, 'JPEG', marginX, position, printableWidth, imgHeight, undefined, 'SLOW');
-          heightLeft -= printableHeight;
-
-          while (heightLeft > 15) {
-            position = marginY - (imgHeight - heightLeft);
-            pdf.addPage('a4', 'p');
-            pdf.addImage(imgData, 'JPEG', marginX, position, printableWidth, imgHeight, undefined, 'SLOW');
-            heightLeft -= printableHeight;
-          }
         }
       }
     } else {
@@ -250,12 +246,14 @@ export async function generateQuotePdf(
           const style = clonedDoc.createElement('style');
           style.innerHTML = `
             * {
-              font-family: Arial, Helvetica, sans-serif !important;
-              letter-spacing: 0px !important;
-              word-spacing: normal !important;
-              -webkit-font-smoothing: antialiased !important;
-              text-rendering: geometricPrecision !important;
               box-sizing: border-box !important;
+              -webkit-font-smoothing: antialiased !important;
+            }
+            body, .pdf-page {
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+              text-rendering: auto !important;
+              letter-spacing: normal !important;
+              word-spacing: normal !important;
             }
           `;
           clonedDoc.head.appendChild(style);
@@ -265,17 +263,13 @@ export async function generateQuotePdf(
       const imgData = canvas.toDataURL('image/jpeg', 0.98);
       const imgHeight = (canvas.height * printableWidth) / canvas.width;
 
-      let heightLeft = imgHeight;
-      let position = marginY;
-
-      pdf.addImage(imgData, 'JPEG', marginX, position, printableWidth, imgHeight, undefined, 'SLOW');
-      heightLeft -= printableHeight;
-
-      while (heightLeft > 15) {
-        position = marginY - (imgHeight - heightLeft);
-        pdf.addPage('a4', 'p');
-        pdf.addImage(imgData, 'JPEG', marginX, position, printableWidth, imgHeight, undefined, 'SLOW');
-        heightLeft -= printableHeight;
+      if (imgHeight <= printableHeight) {
+        pdf.addImage(imgData, 'JPEG', marginX, marginY, printableWidth, imgHeight, undefined, 'SLOW');
+      } else {
+        const scale = printableHeight / imgHeight;
+        const scaledWidth = printableWidth * scale;
+        const centeredX = marginX + (printableWidth - scaledWidth) / 2;
+        pdf.addImage(imgData, 'JPEG', centeredX, marginY, scaledWidth, printableHeight, undefined, 'SLOW');
       }
     }
   } finally {
@@ -283,9 +277,11 @@ export async function generateQuotePdf(
     container.style.transform = originalTransform;
     container.style.transformOrigin = originalTransformOrigin;
     container.style.width = originalWidth;
+    container.style.transition = originalContainerTransition;
     if (parent) {
       parent.style.transform = originalParentTransform;
       parent.style.width = originalParentWidth;
+      parent.style.transition = originalParentTransition;
     }
   }
 

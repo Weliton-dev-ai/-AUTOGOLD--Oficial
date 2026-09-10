@@ -24,6 +24,95 @@ import { generateWhatsAppMessage, openWhatsAppDirect } from '../utils/whatsapp';
 import { downloadQuotePdf, sharePdfOrWhatsApp } from '../utils/pdfGenerator';
 import { rotateImageDataUrl, compressImage } from '../utils/imageCompressor';
 
+interface PhotoCanvasProps {
+  url: string;
+  width: number;
+  height: number;
+  fit: 'contain' | 'cover';
+  alt?: string;
+}
+
+/**
+ * Componente de Canvas HTML5 para renderização à prova de falhas em html2canvas e PDF.
+ * Garante enquadramento milimétrico, resolução 2x (retina) e zero distorções ou cortes.
+ */
+const PhotoCanvas: React.FC<PhotoCanvasProps> = ({ url, width, height, fit, alt }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let isMounted = true;
+    const img = new Image();
+    if (!url.startsWith('data:')) {
+      img.crossOrigin = 'anonymous';
+    }
+
+    img.onload = () => {
+      if (!isMounted) return;
+      const dpr = 2; // Alta densidade de pixels para máxima nitidez
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+
+      ctx.save();
+      ctx.scale(dpr, dpr);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
+      // Fundo escuro automotivo elegante
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, width, height);
+
+      const nw = img.naturalWidth || width;
+      const nh = img.naturalHeight || height;
+
+      let drawW: number;
+      let drawH: number;
+
+      if (fit === 'contain') {
+        const ratio = Math.min(width / nw, height / nh);
+        drawW = nw * ratio;
+        drawH = nh * ratio;
+      } else {
+        const ratio = Math.max(width / nw, height / nh);
+        drawW = nw * ratio;
+        drawH = nh * ratio;
+      }
+
+      const drawX = (width - drawW) / 2;
+      const drawY = (height - drawH) / 2;
+
+      ctx.drawImage(img, drawX, drawY, drawW, drawH);
+      ctx.restore();
+    };
+
+    img.src = url;
+
+    return () => {
+      isMounted = false;
+    };
+  }, [url, width, height, fit]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      aria-label={alt || 'Foto da avaria'}
+      style={{
+        width: `${width}px`,
+        height: `${height}px`,
+        display: 'block',
+        backgroundColor: '#0f172a',
+      }}
+      className="w-full h-full object-contain block"
+    />
+  );
+};
+
 interface QuotePrintModalProps {
   quote: Quote;
   workshop: WorkshopProfile;
@@ -190,6 +279,7 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
   const handleDownloadPdf = async () => {
     setIsGeneratingPdf(true);
     setFeedbackMsg({ type: 'info', text: 'Gerando arquivo PDF em alta definição...' });
+    await new Promise((resolve) => setTimeout(resolve, 120));
 
     try {
       const filename = `Orcamento_${quote.numero}_${quote.cliente.nome.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
@@ -209,6 +299,7 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
   const handleSendWhatsAppWithPdf = async () => {
     setIsGeneratingPdf(true);
     setFeedbackMsg({ type: 'info', text: 'Gerando PDF e preparando envio no WhatsApp...' });
+    await new Promise((resolve) => setTimeout(resolve, 120));
 
     try {
       const filename = `Orcamento_${quote.numero}.pdf`;
@@ -548,21 +639,11 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
             >
               <div className="flex items-center gap-4">
                 {workshop.logotipoUrl ? (
-                  <div
-                    className="h-16 max-w-[180px] flex items-center justify-start shrink-0"
-                    style={{
-                      backgroundImage: `url("${workshop.logotipoUrl}")`,
-                      backgroundSize: 'contain',
-                      backgroundPosition: 'left center',
-                      backgroundRepeat: 'no-repeat',
-                      width: '180px',
-                      height: '64px',
-                    }}
-                  >
+                  <div className="max-w-[170px] max-h-16 flex items-center justify-start shrink-0">
                     <img
                       src={workshop.logotipoUrl}
                       alt={workshop.nomeOficina}
-                      className="h-16 max-w-[180px] object-contain rounded shrink-0 block"
+                      className="max-h-16 max-w-[170px] w-auto h-auto object-contain rounded shrink-0 block"
                       loading="eager"
                     />
                   </div>
@@ -621,12 +702,12 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
               </div>
             </div>
 
-            {/* Dados do Cliente e Identificação do Veículo (2 Colunas Fixas) */}
-            <div className="grid grid-cols-2 gap-4 print-avoid-break">
+            {/* Dados do Cliente e Identificação do Veículo (2 Colunas Flex Estáveis) */}
+            <div className="flex justify-between gap-4 print-avoid-break" style={{ width: '100%' }}>
               {/* Caixa Cliente */}
               <div
                 className="p-3.5 rounded-xl space-y-1.5 text-xs"
-                style={{ backgroundColor: '#f8fafc', border: '1px solid #cbd5e1' }}
+                style={{ width: 'calc(50% - 8px)', boxSizing: 'border-box', backgroundColor: '#f8fafc', border: '1px solid #cbd5e1' }}
               >
                 <div
                   className="font-bold text-xs uppercase block mb-1 pb-1"
@@ -653,7 +734,7 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
               {/* Caixa Veículo */}
               <div
                 className="p-3.5 rounded-xl space-y-1.5 text-xs"
-                style={{ backgroundColor: '#f8fafc', border: '1px solid #cbd5e1' }}
+                style={{ width: 'calc(50% - 8px)', boxSizing: 'border-box', backgroundColor: '#f8fafc', border: '1px solid #cbd5e1' }}
               >
                 <div
                   className="font-bold text-xs uppercase block mb-1 pb-1"
@@ -762,11 +843,13 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
             </div>
 
             {/* Resumo Financeiro com Caixa de Sinal de 50% Pix e Totalizador */}
-            <div className="grid grid-cols-12 gap-4 items-start print-avoid-break">
-              {/* Esquerda: Caixa de Entrada 50% via Pix (7 colunas) */}
+            <div className="flex justify-between gap-4 items-stretch print-avoid-break" style={{ width: '100%' }}>
+              {/* Esquerda: Caixa de Entrada 50% via Pix (58%) */}
               <div
-                className="col-span-7 p-4 rounded-2xl space-y-3"
+                className="p-4 rounded-2xl space-y-3 flex flex-col justify-between"
                 style={{
+                  width: '58%',
+                  boxSizing: 'border-box',
                   backgroundColor: '#0f172a',
                   color: '#ffffff',
                   border: '1px solid #1e293b',
@@ -792,10 +875,12 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                 </div>
 
                 {/* Valores Divididos (50% Entrada e 50% Entrega) */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="flex justify-between gap-3">
                   <div
                     className="p-3 rounded-xl"
                     style={{
+                      width: 'calc(50% - 6px)',
+                      boxSizing: 'border-box',
                       backgroundColor: '#022c22',
                       border: '1px solid #059669',
                     }}
@@ -817,6 +902,8 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                   <div
                     className="p-3 rounded-xl"
                     style={{
+                      width: 'calc(50% - 6px)',
+                      boxSizing: 'border-box',
                       backgroundColor: '#1e293b',
                       border: '1px solid #334155',
                     }}
@@ -886,41 +973,45 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                 </p>
               </div>
 
-              {/* Direita: Totalizador (5 colunas) */}
+              {/* Direita: Totalizador (40%) */}
               <div
-                className="col-span-5 p-4 rounded-2xl space-y-2.5 text-xs"
+                className="p-4 rounded-2xl space-y-2.5 text-xs flex flex-col justify-between"
                 style={{
+                  width: '40%',
+                  boxSizing: 'border-box',
                   backgroundColor: '#f8fafc',
                   border: '1px solid #cbd5e1',
                 }}
               >
-                <div className="flex justify-between" style={{ color: '#475569' }}>
-                  <span>Total Serviços & MDO:</span>
-                  <span className="font-bold tabular-nums" style={{ color: '#0f172a' }}>
-                    {formatCurrencyBRL(totalServicosExibido)}
-                  </span>
-                </div>
-
-                {quote.desconto > 0 && (
-                  <div className="flex justify-between font-bold" style={{ color: '#059669' }}>
-                    <span>Desconto Aplicado:</span>
-                    <span className="tabular-nums">-{formatCurrencyBRL(quote.desconto)}</span>
+                <div>
+                  <div className="flex justify-between" style={{ color: '#475569' }}>
+                    <span>Total Serviços & MDO:</span>
+                    <span className="font-bold tabular-nums" style={{ color: '#0f172a' }}>
+                      {formatCurrencyBRL(totalServicosExibido)}
+                    </span>
                   </div>
-                )}
 
-                <div
-                  className="pt-2 flex justify-between items-baseline"
-                  style={{ borderTop: '2px solid #0f172a' }}
-                >
-                  <span className="font-black text-sm uppercase" style={{ color: '#0f172a' }}>
-                    VALOR TOTAL:
-                  </span>
-                  <span className="text-2xl font-black tabular-nums" style={{ color: '#0f172a' }}>
-                    {formatCurrencyBRL(valorTotalFinal)}
-                  </span>
+                  {quote.desconto > 0 && (
+                    <div className="flex justify-between font-bold mt-2" style={{ color: '#059669' }}>
+                      <span>Desconto Aplicado:</span>
+                      <span className="tabular-nums">-{formatCurrencyBRL(quote.desconto)}</span>
+                    </div>
+                  )}
+
+                  <div
+                    className="pt-3 mt-3 flex justify-between items-baseline"
+                    style={{ borderTop: '2px solid #0f172a' }}
+                  >
+                    <span className="font-black text-sm uppercase" style={{ color: '#0f172a' }}>
+                      VALOR TOTAL:
+                    </span>
+                    <span className="text-2xl font-black tabular-nums" style={{ color: '#0f172a' }}>
+                      {formatCurrencyBRL(valorTotalFinal)}
+                    </span>
+                  </div>
                 </div>
 
-                <div className="pt-2 text-[11px] space-y-1" style={{ color: '#475569' }}>
+                <div className="pt-2 text-[11px] space-y-1 border-t border-slate-200" style={{ color: '#475569' }}>
                   <p>
                     <strong style={{ color: '#0f172a' }}>Prazo de Execução:</strong> {quote.prazoExecucaoDias} dias úteis
                   </p>
@@ -943,13 +1034,13 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                 </div>
               )}
 
-              {/* Linhas de Assinatura */}
-              <div className="grid grid-cols-2 gap-8 pt-5 text-center text-xs" style={{ color: '#334155' }}>
-                <div className="pt-2" style={{ borderTop: '1px solid #94a3b8' }}>
+              {/* Linhas de Assinatura (2 Colunas Flex Estáveis) */}
+              <div className="flex justify-between gap-8 pt-5 text-center text-xs" style={{ width: '100%', color: '#334155' }}>
+                <div className="pt-2" style={{ width: 'calc(50% - 16px)', borderTop: '1px solid #94a3b8' }}>
                   <p className="font-bold" style={{ color: '#0f172a' }}>{workshop.nomeOficina}</p>
                   <p className="text-[10px]" style={{ color: '#64748b' }}>Responsável Técnico / Funilaria & Pintura</p>
                 </div>
-                <div className="pt-2" style={{ borderTop: '1px solid #94a3b8' }}>
+                <div className="pt-2" style={{ width: 'calc(50% - 16px)', borderTop: '1px solid #94a3b8' }}>
                   <p className="font-bold" style={{ color: '#0f172a' }}>{quote.cliente.nome}</p>
                   <p className="text-[10px]" style={{ color: '#64748b' }}>Aceite do Cliente e Aprovação do Orçamento</p>
                 </div>
@@ -987,17 +1078,7 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
 
           {/* PÁGINAS DO LAUDO FOTOGRÁFICO DE REGISTRO DE AVARIAS (IMPRESSO COM O ORÇAMENTO) */}
           {hasPhotos && photoPages.map((pagePhotos, pageIndex) => {
-            const gridColsClass = photoLayout === '2_per_page' 
-              ? 'grid-cols-2 gap-5' 
-              : photoLayout === '6_per_page' 
-              ? 'grid-cols-2 gap-3' 
-              : 'grid-cols-2 gap-4';
-
-            const imageHeightClass = photoLayout === '2_per_page' 
-              ? 'h-64' 
-              : photoLayout === '6_per_page' 
-              ? 'h-32' 
-              : 'h-44';
+            const canvasHeight = photoLayout === '2_per_page' ? 250 : photoLayout === '6_per_page' ? 140 : 190;
 
             return (
               <div
@@ -1020,21 +1101,11 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                 >
                   <div className="flex items-center gap-2.5">
                     {workshop.logotipoUrl ? (
-                      <div
-                        className="h-10 max-w-[130px] flex items-center justify-start shrink-0"
-                        style={{
-                          backgroundImage: `url("${workshop.logotipoUrl}")`,
-                          backgroundSize: 'contain',
-                          backgroundPosition: 'left center',
-                          backgroundRepeat: 'no-repeat',
-                          width: '130px',
-                          height: '40px',
-                        }}
-                      >
+                      <div className="max-w-[130px] max-h-10 flex items-center justify-start shrink-0">
                         <img
                           src={workshop.logotipoUrl}
                           alt={workshop.nomeOficina}
-                          className="h-10 max-w-[130px] object-contain rounded block"
+                          className="max-h-10 max-w-[130px] w-auto h-auto object-contain rounded block"
                           loading="eager"
                         />
                       </div>
@@ -1070,43 +1141,45 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                   </div>
                 </div>
 
-                {/* Grade de Fotos do Laudo: Configuração de Colunas e Altura Estabilizada */}
-                <div className={`grid ${gridColsClass}`}>
+                {/* Grade de Fotos do Laudo: Flexbox estável de 2 colunas com largura exata de 348px */}
+                <div className="flex flex-wrap justify-between gap-y-4" style={{ width: '714px' }}>
                   {pagePhotos.map((foto, index) => {
                     const globalIndex = pageIndex * chunkSize + index;
                     return (
                       <div
                         key={foto.id}
                         className="rounded-xl overflow-hidden flex flex-col shadow-sm"
-                        style={{ border: '1px solid #cbd5e1', backgroundColor: '#ffffff' }}
+                        style={{
+                          width: '348px',
+                          border: '1px solid #cbd5e1',
+                          backgroundColor: '#ffffff',
+                          boxSizing: 'border-box',
+                        }}
                       >
-                        {/* Imagem com proporção estabilizada, background-image nativo para html2canvas e enquadramento seguro */}
+                        {/* Imagem renderizada em Canvas HTML5 de alta definição para enquadramento perfeito no PDF */}
                         <div
-                          className={`relative w-full ${imageHeightClass} overflow-hidden flex items-center justify-center`}
+                          className="relative overflow-hidden flex items-center justify-center"
                           style={{
+                            width: '348px',
+                            height: `${canvasHeight}px`,
                             backgroundColor: '#0f172a',
-                            backgroundImage: `url("${foto.url}")`,
-                            backgroundSize: photoFit === 'contain' ? 'contain' : 'cover',
-                            backgroundPosition: 'center center',
-                            backgroundRepeat: 'no-repeat',
                           }}
                         >
-                          <img
-                            src={foto.url}
-                            alt={foto.descricao || 'Foto de avaria'}
-                            className={`w-full h-full block select-none ${
-                              photoFit === 'contain' ? 'object-contain' : 'object-cover'
-                            }`}
-                            loading="eager"
+                          <PhotoCanvas
+                            url={foto.url}
+                            width={348}
+                            height={canvasHeight}
+                            fit={photoFit}
+                            alt={foto.descricao || `Registro #${globalIndex + 1}`}
                           />
                           <span
-                            className="absolute top-2 left-2 font-mono font-bold text-[10px] px-2 py-0.5 rounded shadow"
+                            className="absolute top-2 left-2 font-mono font-bold text-[10px] px-2 py-0.5 rounded shadow z-10"
                             style={{ backgroundColor: '#0f172a', color: '#ffffff' }}
                           >
                             Registro #{globalIndex + 1}
                           </span>
 
-                          <div className="absolute top-2 right-2 flex items-center gap-1.5 print:hidden">
+                          <div className="absolute top-2 right-2 flex items-center gap-1.5 print:hidden z-10">
                             {/* Botão de Girar Foto 90° (Visível no preview, oculto na impressão / PDF) */}
                             <button
                               type="button"
