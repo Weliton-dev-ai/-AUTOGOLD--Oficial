@@ -1,4 +1,4 @@
-export type DamageLevel = 'pequena' | 'media' | 'grande' | 'troca' | 'apenas_pintura' | 'apenas_funilaria';
+export type DamageLevel = 'pequena' | 'media' | 'grande' | 'troca' | 'apenas_pintura' | 'apenas_funilaria' | 'retoque_rapido';
 
 export type PaintType = 'solida' | 'metalica' | 'perolizada' | 'tricote_especial';
 
@@ -20,6 +20,7 @@ export interface MaterialInsumo {
     troca: number;
     apenas_pintura: number;
     apenas_funilaria: number;
+    retoque_rapido?: number;
   };
 }
 
@@ -34,6 +35,7 @@ export interface BodyPartItem {
     troca: number;
     apenas_pintura: number;
     apenas_funilaria: number;
+    retoque_rapido?: number;
   };
   horasPinturaPadrao: {
     pequena: number;
@@ -42,6 +44,7 @@ export interface BodyPartItem {
     troca: number;
     apenas_pintura: number;
     apenas_funilaria: number;
+    retoque_rapido?: number;
   };
 }
 

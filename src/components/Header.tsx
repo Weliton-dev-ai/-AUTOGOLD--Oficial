@@ -39,17 +39,18 @@ export const Header: React.FC<HeaderProps> = ({
           
           {/* Brand & Workshop Info */}
           <div className="flex items-center gap-3.5 min-w-0">
-            {/* AutoGold Brand Icon */}
+            {/* Fleet Auto Pro Brand Icon */}
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0066FF] to-[#003882] flex items-center justify-center text-white shadow-md shadow-blue-900/40 border border-blue-400/40 shrink-0">
               <Wrench className="w-5 h-5 text-white" />
             </div>
 
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <div className="flex items-center">
-                  <span className="font-black text-lg tracking-wider text-white">AUTO</span>
-                  <span className="font-black text-lg tracking-wider bg-gradient-to-r from-[#FFD700] via-[#FFA500] to-[#FFB700] bg-clip-text text-transparent">
-                    GOLD
+                <div className="flex items-center tracking-wider">
+                  <span className="font-black text-lg text-white">FLEET </span>
+                  <span className="font-black text-lg text-blue-400">AUTO</span>
+                  <span className="ml-1.5 px-1.5 py-0.5 rounded text-[11px] bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black tracking-widest shadow-sm">
+                    PRO
                   </span>
                 </div>
                 {/* Status da Licença Vitalícia */}

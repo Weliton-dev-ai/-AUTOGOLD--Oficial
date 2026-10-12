@@ -69,7 +69,7 @@ export default function App() {
 
   // Handle Logout
   const handleLogout = () => {
-    if (window.confirm('Deseja sair da sua conta AutoGold?')) {
+    if (window.confirm('Deseja sair da sua conta Fleet Auto Pro?')) {
       saveCurrentUser(null);
       setCurrentUser(null);
     }
@@ -77,7 +77,7 @@ export default function App() {
 
   // Handle Save / Update Quote
   const handleSaveQuote = (quote: Quote, navigateToList: boolean = false) => {
-    const userEmail = currentUser?.email || 'admin@autogold.com.br';
+    const userEmail = currentUser?.email || 'admin@fleetautopro.com.br';
     
     const existingIndex = quotes.findIndex((q) => q.id === quote.id);
     let updatedQuotes: Quote[];

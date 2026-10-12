@@ -652,8 +652,8 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                     className="w-16 h-16 rounded-xl flex flex-col items-center justify-center font-black shadow-sm shrink-0"
                     style={{ backgroundColor: '#0f172a', color: '#ffffff' }}
                   >
-                    <span className="text-[11px] uppercase font-bold" style={{ color: '#60a5fa' }}>AUTO</span>
-                    <span className="text-sm font-bold" style={{ color: '#facc15' }}>GOLD</span>
+                    <span className="text-[10px] uppercase font-bold tracking-wider" style={{ color: '#60a5fa' }}>FLEET</span>
+                    <span className="text-xs font-black tracking-wider" style={{ color: '#38bdf8' }}>AUTO PRO</span>
                   </div>
                 )}
 
@@ -817,6 +817,18 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                               }}
                             >
                               Polimento & Estética
+                            </span>
+                          ) : item.avaria === 'retoque_rapido' ? (
+                            <span
+                              className="inline-block px-2.5 py-1 rounded text-[10px] font-bold"
+                              style={{
+                                backgroundColor: '#ccfbf1',
+                                color: '#0f766e',
+                                border: '1px solid #5eead4',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              Retoque Rápido / Localizado
                             </span>
                           ) : (
                             <span
@@ -1217,7 +1229,7 @@ export const QuotePrintModal: React.FC<QuotePrintModalProps> = ({
                           </p>
                           <div className="flex items-center justify-between text-[9px] pt-0.5" style={{ color: '#64748b' }}>
                             <span>Data do Registro: {foto.dataHora}</span>
-                            <span className="font-bold" style={{ color: '#1d4ed8' }}>AutoGold Inspeção</span>
+                            <span className="font-bold" style={{ color: '#1d4ed8' }}>Fleet Auto Pro Inspeção</span>
                           </div>
                         </div>
                       </div>

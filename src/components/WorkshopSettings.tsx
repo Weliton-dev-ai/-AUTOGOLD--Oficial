@@ -173,7 +173,7 @@ export const WorkshopSettings: React.FC<WorkshopSettingsProps> = ({
                 required
                 value={profile.nomeOficina}
                 onChange={(e) => setProfile({ ...profile, nomeOficina: e.target.value })}
-                placeholder="ex: AutoGold Centro Automotivo"
+                placeholder="ex: Fleet Auto Pro Funilaria & Pintura"
                 className="w-full px-3.5 py-2.5 bg-[#0A0A0C] border border-[#223952] rounded-xl text-slate-100 font-semibold focus:outline-none focus:border-[#0066FF]"
               />
             </div>
@@ -298,7 +298,7 @@ export const WorkshopSettings: React.FC<WorkshopSettingsProps> = ({
                 required
                 value={profile.titularPix}
                 onChange={(e) => setProfile({ ...profile, titularPix: e.target.value })}
-                placeholder="AutoGold Oficina Especializada"
+                placeholder="Fleet Auto Pro Oficina Especializada"
                 className="w-full px-3.5 py-2.5 bg-[#0A0A0C] border border-[#223952] rounded-xl text-slate-100 focus:outline-none focus:border-[#0066FF]"
               />
             </div>

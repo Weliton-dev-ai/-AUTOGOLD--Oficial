@@ -29,6 +29,11 @@ export function getPaintTypeMultiplier(paintType: PaintType): { costMultiplier: 
 
 export function getDamageLevelLabel(damage: DamageLevel): { label: string; desc: string } {
   switch (damage) {
+    case 'retoque_rapido':
+      return { 
+        label: 'Retoque Localizado / Retoque Rápido', 
+        desc: 'Pintura localizada / spot repair com blend e polimento técnico sem repintura completa' 
+      };
     case 'pequena':
       return { label: 'Pequena Avaria', desc: 'Arranhões leves, retoques rápidos, pequenos vincos' };
     case 'media':
@@ -67,8 +72,10 @@ export function calculateQuoteItem(params: CalculationParams): QuoteItem {
   const areaMultiplier = bodyPart.areaRelativa;
 
   // 1. Mão de obra
-  const horasFunilaria = bodyPart.horasFunilariaPadrao[damageLevel] || 0;
-  const horasPintura = bodyPart.horasPinturaPadrao[damageLevel] || 0;
+  const horasFunilaria = bodyPart.horasFunilariaPadrao[damageLevel] ?? 
+    (damageLevel === 'retoque_rapido' ? Math.round(((bodyPart.horasFunilariaPadrao.pequena || 0.8) * 0.4) * 10) / 10 : 0);
+  const horasPintura = bodyPart.horasPinturaPadrao[damageLevel] ?? 
+    (damageLevel === 'retoque_rapido' ? Math.max(0.6, Math.round(((bodyPart.horasPinturaPadrao.apenas_pintura || 2.2) * 0.45) * 10) / 10) : 0);
 
   const valorMaoDeObraFunilaria = horasFunilaria * valorHoraFunilaria;
   const valorMaoDeObraPintura = horasPintura * valorHoraPintura;
@@ -78,7 +85,15 @@ export function calculateQuoteItem(params: CalculationParams): QuoteItem {
   let valorInsumosFracionados = 0;
 
   materials.forEach((mat) => {
-    const baseConsumo = mat.consumoPadraoPorPeca[damageLevel] || 0;
+    let baseConsumo = mat.consumoPadraoPorPeca[damageLevel];
+    if (baseConsumo === undefined) {
+      if (damageLevel === 'retoque_rapido') {
+        const refConsumo = mat.consumoPadraoPorPeca.pequena || mat.consumoPadraoPorPeca.apenas_pintura || 0;
+        baseConsumo = Math.round(refConsumo * 0.45 * 10) / 10;
+      } else {
+        baseConsumo = 0;
+      }
+    }
     if (baseConsumo <= 0) return;
 
     // Ajusta consumo pela área da peça

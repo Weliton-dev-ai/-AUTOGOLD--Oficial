@@ -605,9 +605,10 @@ export const QuoteBuilder: React.FC<QuoteBuilderProps> = ({
                 <label className="block text-xs font-semibold text-slate-300 mb-2">
                   Nível de Avaria / Tipo de Trabalho
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
                   {(
                     [
+                      'retoque_rapido',
                       'pequena',
                       'media',
                       'grande',

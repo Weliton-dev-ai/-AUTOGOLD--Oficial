@@ -11,9 +11,9 @@ interface LoginLicenseModalProps {
 
 export const LoginLicenseModal: React.FC<LoginLicenseModalProps> = ({ onLoginSuccess }) => {
   const [mode, setMode] = useState<'login' | 'activate'>('login');
-  const [email, setEmail] = useState('oficina@autogold.com.br');
+  const [email, setEmail] = useState('oficina@fleetautopro.com.br');
   const [password, setPassword] = useState('123456');
-  const [activationKey, setActivationKey] = useState('GOLD-2026-PRO');
+  const [activationKey, setActivationKey] = useState('FLEET-2026-PRO');
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [loading, setLoading] = useState(false);
@@ -33,9 +33,9 @@ export const LoginLicenseModal: React.FC<LoginLicenseModalProps> = ({ onLoginSuc
       setLoading(false);
       const user: UserAccount = {
         email: email.trim().toLowerCase(),
-        nome: email.split('@')[0] || 'Oficina AutoGold',
+        nome: email.split('@')[0] || 'Oficina Fleet Auto Pro',
         licencaAtiva: true,
-        chaveAtivacao: 'GOLD-2026-PRO',
+        chaveAtivacao: 'FLEET-2026-PRO',
         dataAtivacao: new Date().toISOString(),
       };
       saveCurrentUser(user);
@@ -95,10 +95,10 @@ export const LoginLicenseModal: React.FC<LoginLicenseModalProps> = ({ onLoginSuc
             <Wrench className="w-8 h-8 text-white stroke-[2.2]" />
           </div>
           
-          <div className="flex items-center justify-center gap-2">
-            <span className="text-2xl font-black tracking-wider text-white">AUTO</span>
-            <span className="text-2xl font-black tracking-wider bg-gradient-to-r from-[#FFD700] via-[#FFA500] to-[#FFB700] bg-clip-text text-transparent">
-              GOLD
+          <div className="flex items-center justify-center gap-1.5">
+            <span className="text-2xl font-black tracking-wider text-white">FLEET AUTO</span>
+            <span className="px-2 py-0.5 rounded-md text-sm bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black tracking-widest shadow-sm">
+              PRO
             </span>
           </div>
           <p className="text-xs uppercase tracking-widest text-blue-400/90 font-semibold mt-1">
@@ -195,7 +195,7 @@ export const LoginLicenseModal: React.FC<LoginLicenseModalProps> = ({ onLoginSuc
             <form onSubmit={handleActivateLicense} className="space-y-4">
               <div className="p-3.5 rounded-xl bg-[#0A0A0C]/80 border border-blue-500/20 text-xs text-slate-300 space-y-1">
                 <p className="font-semibold text-blue-400 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" /> Ativação Vitalícia AutoGold
+                  <Sparkles className="w-3.5 h-3.5" /> Ativação Vitalícia Fleet Auto Pro
                 </p>
                 <p className="text-slate-400 text-[11px]">
                   Insira o código de ativação fornecido na aquisição para liberar o uso ilimitado.
@@ -228,13 +228,13 @@ export const LoginLicenseModal: React.FC<LoginLicenseModalProps> = ({ onLoginSuc
                     required
                     value={activationKey}
                     onChange={(e) => setActivationKey(e.target.value.toUpperCase())}
-                    placeholder="ex: GOLD-2026-PRO"
+                    placeholder="ex: FLEET-2026-PRO"
                     className="w-full pl-10 pr-4 py-3 bg-[#0A0A0C] border border-blue-500/40 rounded-xl text-yellow-400 font-mono font-bold tracking-wider placeholder-slate-600 text-sm focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
                   />
                   <Key className="w-4 h-4 text-blue-400 absolute left-3.5 top-3.5" />
                 </div>
                 <p className="text-[11px] text-slate-400 mt-1">
-                  Chaves válidas: <span className="text-yellow-400 font-mono">GOLD-2026-PRO</span> ou <span className="text-yellow-400 font-mono">AUTOGOLD-VITALICIO</span>
+                  Chaves válidas: <span className="text-yellow-400 font-mono">FLEET-2026-PRO</span> ou <span className="text-yellow-400 font-mono">FLEETAUTO-VITALICIO</span>
                 </p>
               </div>
 
@@ -273,7 +273,7 @@ export const LoginLicenseModal: React.FC<LoginLicenseModalProps> = ({ onLoginSuc
         {/* Footer info */}
         <div className="px-6 py-3 bg-[#0A0A0C]/90 border-t border-[#1E3349] flex items-center justify-between text-[11px] text-slate-400">
           <span className="flex items-center gap-1">
-            <Car className="w-3.5 h-3.5 text-blue-400" /> AutoGold v2026
+            <Car className="w-3.5 h-3.5 text-blue-400" /> Fleet Auto Pro v2026
           </span>
           <span className="text-emerald-400 font-medium flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>

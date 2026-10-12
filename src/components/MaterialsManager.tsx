@@ -98,6 +98,7 @@ export const MaterialsManager: React.FC<MaterialsManagerProps> = ({
       quantidadeEmbalagem: Number(newQtdEmbalagem) || 1,
       precoEmbalagem: Number(newPrecoEmbalagem) || 0,
       consumoPadraoPorPeca: {
+        retoque_rapido: Math.round(newQtdEmbalagem * 0.025),
         pequena: Math.round(newQtdEmbalagem * 0.05),
         media: Math.round(newQtdEmbalagem * 0.1),
         grande: Math.round(newQtdEmbalagem * 0.2),
@@ -120,7 +121,7 @@ export const MaterialsManager: React.FC<MaterialsManagerProps> = ({
       <div className="bg-gradient-to-r from-[#0F1B27] via-[#16293D] to-[#0F1B27] border border-blue-500/30 rounded-2xl p-5 shadow-xl space-y-2">
         <div className="flex items-center gap-2 text-blue-400 font-bold text-sm uppercase tracking-wider">
           <FlaskConical className="w-5 h-5 text-blue-400" />
-          <span>Lógica de Cálculo Fracionado de Materiais (AutoGold)</span>
+          <span>Lógica de Cálculo Fracionado de Materiais (Fleet Auto Pro)</span>
         </div>
         <p className="text-xs text-slate-300 leading-relaxed max-w-4xl">
           Diferenciação precisa entre o <strong>preço cheio da embalagem comercial</strong> (ex: Lata de Verniz 900ml por R$ 135) 
